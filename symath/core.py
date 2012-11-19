@@ -2,6 +2,7 @@
 # this only exists because sympy crashes IDAPython
 # for general use sympy is much more complete
 
+import threading
 import traceback
 from memoize import Memoize
 import types
@@ -69,13 +70,13 @@ def _simplify_pass(exp):
       if exp[1] == exp[2]:
         return exp[1] * 2
 
-      if exp[1].name == '*' and len(exp[1]) == 2:
+      if exp[1].name == '*' and len(exp[1]) == 3:
         if exp[1][1] == exp[2]:
           return (exp[1][2] + 1) * exp[2]
         if exp[1][2] == exp[2]:
           return (exp[1][1] + 1) * exp[2]
 
-      if exp[2].name == '*' and len(exp[2]) == 2:
+      if exp[2].name == '*' and len(exp[2]) == 3:
         if exp[2][1] == exp[1]:
           return (exp[2][2] + 1) * exp[1]
         if exp[2][2] == exp[1]:
@@ -87,13 +88,29 @@ def _simplify_pass(exp):
 
   return exp
 
-def _simplify(exp):
-  sexp = _simplify_pass(exp)
-  while sexp != exp:
-    exp = sexp
-    sexp = _simplify_pass(exp)
+# FIXME/TODO:
+#  using a lock for this is super retarded, but it's a quick easy hack
+#  the problem is that we don't want expressions being created by simplify to
+#  trigger a simplification themselves
+_simplify_lock = threading.RLock()
+_in_simplify = False
 
-  return exp
+def _simplify(exp):
+  global _in_simplify
+  global _simplify_lock
+
+  while _simplify_lock:
+    if _in_simplify:
+      return exp
+  
+    _in_simplify = True
+    sexp = _simplify_pass(exp)
+    while sexp != exp:
+      exp = sexp
+      sexp = _simplify_pass(exp)
+  
+    _in_simplify = False
+    return exp
 
 def _order(a,b):
   '''

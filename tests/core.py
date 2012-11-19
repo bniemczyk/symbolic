@@ -40,6 +40,7 @@ class TestCoreClasses(unittest.TestCase):
   def test_fold_additions(self):
     self.assertEqual(self.x + self.x, 2 * self.x)
     self.assertEqual(self.x + self.y * self.x, (self.y + 1) * self.x)
+    self.assertEqual(str(self.x + self.y * self.x), '((1 + y) * x)')
 
 if __name__ == '__main__':
   unittest.main()
