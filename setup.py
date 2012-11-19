@@ -10,5 +10,13 @@ setup( \
   author_email='brandon.niemczyk@gmail.com', \
   url='http://github.com/bniemczyk/symbolics', \
   packages=['symath'], \
-  test_suite='tests' \
+  test_suite='tests', \
+  license='BSD', \
+  classifiers = [ \
+    'Development Status :: 3 - Alpha', \
+    'Intended Audience :: Developers', \
+    'Intended Audience :: Science/Research', \
+    'License :: OSI Approved :: BSD License', \
+    'Topic :: Scientific/Engineering :: Mathematics' \
+    ]
   )
