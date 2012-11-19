@@ -10,5 +10,5 @@ setup( \
   author_email='brandon.niemczyk@gmail.com', \
   url='http://github.com/bniemczyk/symbolics', \
   packages=['symbolic'], \
-  test_suite='test' \
+  test_suite='tests' \
   )
