@@ -25,5 +25,9 @@ class TestCoreClasses(unittest.TestCase):
     self.assertTrue(isinstance(sn, symath.Number))
     self.assertEqual(sn, 3)
 
+  def test_nonsymbol_function_head(self):
+    h = self.x + self.y
+    self.assertEqual(h(self.x), (self.x + self.y)(self.x))
+
 if __name__ == '__main__':
   unittest.main()

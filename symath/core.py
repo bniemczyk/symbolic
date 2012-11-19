@@ -520,13 +520,18 @@ class Fn(_Symbolic):
         'orig args': list(map(lambda x: x._dump(), self.orig_args))
         }
 
+  def __call__(self, *args):
+    return Fn(self, *args, **self.kargs)
+
   def walk(self, fn):
     args = map(lambda x: x.walk(fn), self.args)
-    return fn(self.fn(*args))
+    newfn = self.fn.walk(fn)
+    return fn(newfn(*args))
 
   def substitute(self, subs):
     args = list(map(lambda x: x.substitute(subs), self.args))
-    self = Fn(self.fn, *args, **self.kargs)
+    newfn = self.fn.substitute(subs)
+    self = Fn(newfn, *args, **self.kargs)
 
     if self in subs:
       self = subs[self]
