@@ -645,10 +645,10 @@ class Fn(_Symbolic):
     return Fn(symbolic('^', **kargs), lhs, rhs, cast=int, identity=symbolic(0), numeric='__xor__', **kargs)
 
   def __str__(self):
-    if not self.name[0].isalnum() and len(self.args) == 2:
+    if isinstance(self.fn, Symbol) and not self.name[0].isalnum() and len(self.args) == 2:
       return '(%s %s %s)' % (self.args[0], self.name, self.args[1])
 
-    return '%s(%s)' % (self.name, ','.join(map(str, self.args)))
+    return '%s(%s)' % (self.fn, ','.join(map(str, self.args)))
 
   def __repr__(self):
     return str(self)

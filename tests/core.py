@@ -29,5 +29,8 @@ class TestCoreClasses(unittest.TestCase):
     h = self.x + self.y
     self.assertEqual(h(self.x), (self.x + self.y)(self.x))
 
+  def test_nonsymbol_function_head_complete(self):
+    self.assertEqual(str((self.x + self.y)(self.x + self.y)), '(x + y)((x + y))')
+
 if __name__ == '__main__':
   unittest.main()
