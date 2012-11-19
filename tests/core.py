@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import unittest
-from symbolic import *
+from symath import *
 
 class TestCoreClasses(unittest.TestCase):
   def setUp(self):
