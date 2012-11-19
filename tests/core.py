@@ -36,11 +36,18 @@ class TestCoreClasses(unittest.TestCase):
     self.assertEqual(self.x * self.x, self.x ** 2)
     self.assertEqual(self.x ** 2 * self.x, self.x ** 3)
     self.assertEqual(self.x * self.x * self.x, self.x ** 3)
+    self.assertEqual((2 * self.x) * self.x, self.x ** 2 * 2)
 
   def test_fold_additions(self):
     self.assertEqual(self.x + self.x, 2 * self.x)
     self.assertEqual(self.x + self.y * self.x, (self.y + 1) * self.x)
     self.assertEqual(str(self.x + self.y * self.x), '((1 + y) * x)')
+
+  def test_equality(self):
+    self.assertNotEqual(self.x(3), self.x(4))
+    self.assertEqual(self.x, self.x)
+    self.assertEqual(self.x(3), self.x(3))
+    self.assertEqual(self.x(self.y), self.x(self.y))
 
 if __name__ == '__main__':
   unittest.main()

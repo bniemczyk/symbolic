@@ -4,10 +4,10 @@
 
 import threading
 import traceback
-from memoize import Memoize
 import types
 import copy
 import operator
+from memoize import Memoize
 
 def _distribute(op1, op2, exp):
   '''
@@ -39,29 +39,49 @@ def _distribute(op1, op2, exp):
 
   return exp
 
+@Memoize
 def _simplify_pass(exp):
   _and,_or,_mul,_add,_sub = symbols('& | * + -')
   exp = _distribute(_and, _or, exp)
   exp = _distribute(_mul, _add, exp)
   exp = _distribute(_mul, _sub, exp)
 
-  def _convert_to_pow(exp):
+  def _get_factors(exp):
+    rv = {}
+
     if exp[0].name == '*' and len(exp) == 3:
+      tmp = _get_factors(exp[1])
+      for i in tmp:
+        if i in rv:
+          rv[i] += tmp[i] 
+        else:
+          rv[i] = tmp[i]
+      tmp = _get_factors(exp[2])
+      for i in tmp:
+        if i in rv:
+          rv[i] += tmp[i] 
+        else:
+          rv[i] = tmp[i]
 
-      if exp[1] == exp[2]:
-        return exp[1] ** 2
+    elif exp[0].name == '**' and len(exp) == 3:
+      rv = _get_factors(exp[1])
+      for k in rv:
+        rv[k] = rv[k] * exp[2]
 
-      if exp[1].name == '**' and len(exp[1]) == 3 and exp[1][1] == exp[2]:
-        return exp[1][1] ** (exp[1][2] + 1)
+    else:
+      rv[exp] = 1
 
-      if exp[2].name == '**' and len(exp[2]) == 3 and exp[2][1] == exp[1]:
-        return exp[2][1] ** (exp[2][2] + 1)
+    return rv
 
-      if exp[2].name == '**' and len(exp[2]) == 3 \
-          and exp[1].name == '**' and len(exp[1]) == 3 \
-          and exp[1][1] == exp[2][1]:
-        return exp[1][1] ** (exp[1][2] + exp[2][2])
-    return exp
+  def _convert_to_pow(exp):
+    fs = _get_factors(exp)
+    rv = 1
+    for k in fs:
+      if fs[k] == 1:
+        rv = rv * k
+      else:
+        rv = rv * (k ** fs[k])
+    return rv
 
   exp = exp.walk(_convert_to_pow)
 
@@ -95,11 +115,12 @@ def _simplify_pass(exp):
 _simplify_lock = threading.RLock()
 _in_simplify = False
 
+@Memoize
 def _simplify(exp):
   global _in_simplify
   global _simplify_lock
 
-  while _simplify_lock:
+  with _simplify_lock:
     if _in_simplify:
       return exp
   
@@ -154,7 +175,7 @@ class _Symbolic(tuple):
     return self
 
   def __eq__(self, other):
-    return id(self) == id(other)
+    return type(self) == type(other) and self.name == other.name
 
   def __ne__(self, other):
     return not self.__eq__(other)
@@ -237,7 +258,6 @@ class _Symbolic(tuple):
 
 class Boolean(int):
 
-  @Memoize
   def __new__(typ, b):
     self = int.__new__(typ, 1 if b else 0)
     self.name = str(b)
@@ -255,7 +275,6 @@ class Number(_Symbolic):
   IFORMAT = str
   FFORMAT = str
 
-  @Memoize
   def __new__(typ, n):
     n = float(n)
     self = _Symbolic.__new__(typ)
@@ -495,7 +514,6 @@ class Symbol(Wild):
   (and in fact are wilds guaranteed to be the same instance)
   '''
 
-  @Memoize
   def __new__(typ, name, **kargs):
     self = Wild.__new__(typ, name)
     self.name = name
@@ -506,7 +524,6 @@ class Symbol(Wild):
 
 class Fn(_Symbolic):
 
-  @Memoize
   def __new__(typ, fn, *args, **kargs):
     '''
     arguments: Function, *arguments, **kargs
@@ -593,6 +610,19 @@ class Fn(_Symbolic):
     rv = _simplify(self._canonicalize())._canonicalize()
 
     return rv
+
+  def __eq__(self, other):
+    if not type(self) == type(other):
+      return False
+
+    if len(self.args) != len(other.args):
+      return False
+
+    for i in range(len(self.args)):
+      if self.args[i] != other.args[i]:
+        return False
+
+    return self.fn == other.fn
 
   def _dump(self):
     return {
