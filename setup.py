@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from distutils.core import setup
+from setuptools import setup
 
 setup( \
   name='symbolic', \
@@ -9,5 +9,6 @@ setup( \
   author='Brandon Niemczyk', \
   author_email='brandon.niemczyk@gmail.com', \
   url='http://github.com/bniemczyk/symbolics', \
-  packages=['symbolic'] \
+  packages=['symbolic'], \
+  test_suite='test' \
   )
