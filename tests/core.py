@@ -32,5 +32,10 @@ class TestCoreClasses(unittest.TestCase):
   def test_nonsymbol_function_head_complete(self):
     self.assertEqual(str((self.x + self.y)(self.x + self.y)), '(x + y)((x + y))')
 
+  def test_pow(self):
+    self.assertEqual(self.x * self.x, self.x ** 2)
+    self.assertEqual(self.x ** 2 * self.x, self.x ** 3)
+    self.assertEqual(self.x * self.x * self.x, self.x ** 3)
+
 if __name__ == '__main__':
   unittest.main()

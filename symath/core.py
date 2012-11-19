@@ -38,11 +38,39 @@ def _distribute(op1, op2, exp):
 
   return exp
 
-def _simplify(exp):
+def _simplify_pass(exp):
   _and,_or,_mul,_add,_sub = symbols('& | * + -')
   exp = _distribute(_and, _or, exp)
   exp = _distribute(_mul, _add, exp)
   exp = _distribute(_mul, _sub, exp)
+
+  def _convert_to_pow(exp):
+    if exp[0].name == '*' and len(exp) == 3:
+
+      if exp[1] == exp[2]:
+        return exp[1] ** 2
+
+      if exp[1].name == '**' and len(exp[1]) == 3 and exp[1][1] == exp[2]:
+        return exp[1][1] ** (exp[1][2] + 1)
+
+      if exp[2].name == '**' and len(exp[2]) == 3 and exp[2][1] == exp[1]:
+        return exp[2][1] ** (exp[2][2] + 1)
+
+      if exp[2].name == '**' and len(exp[2]) == 3 \
+          and exp[1].name == '**' and len(exp[1]) == 3 \
+          and exp[1][1] == exp[2][1]:
+        return exp[1][1] ** (exp[1][2] + exp[2][2])
+    return exp
+
+  exp = exp.walk(_convert_to_pow)
+  return exp
+
+def _simplify(exp):
+  sexp = _simplify_pass(exp)
+  while sexp != exp:
+    exp = sexp
+    sexp = _simplify_pass(exp)
+
   return exp
 
 def _order(a,b):
@@ -107,6 +135,12 @@ class _Symbolic(tuple):
   # arithmetic overrides
   def __mul__(self, other, commutative=True, associative=True):
     return Fn.Mul(self, other, commutative=commutative, associative=associative)
+
+  def __pow__(self, other, commutative=False, associative=False):
+    return Fn.Pow(self, other, commutative=commutative, associative=associative)
+
+  def __rpow__(self, other, commutative=False, associative=False):
+    return Fn.Pow(other, self, commutative=commutative, associative=associative)
 
   def __div__(self, other, commutative=False, associative=False):
     return Fn.Div(self, other, commutative=commutative, associative=associative)
@@ -216,17 +250,31 @@ class Number(_Symbolic):
     return symbolic(self.n.__neg__())
 
   def __mul__(self, other):
-    if not isinstance(other, Number):
-      other = symbolic(other)
+    other = symbolic(other)
 
     if isinstance(other, Number):
       return symbolic(self.n.__mul__(other.n))
 
-    return symbolic(other.__rmul__(self.n))
+    return symbolic(other.__rmul__(self))
+
+  def __pow__(self, other):
+    other = symbolic(other)
+
+    if isinstance(other, Number):
+      return symbolic(self.n ** other.n)
+
+    return symbolic(other.__rpow__(self))
+
+  def __rpow__(self, other):
+    other = symbolic(other)
+
+    if isinstance(other, Number):
+      return symbolic(other.n ** self.n)
+
+    return symbolic(other.__pow__(self))
 
   def __div__(self, other):
-    if not isinstance(other, Number):
-      other = symbolic(other)
+    other = symbolic(other)
 
     if isinstance(other, Number):
       return symbolic(self.n.__div__(other.n))
@@ -234,8 +282,7 @@ class Number(_Symbolic):
     return symbolic(other.__rdiv__(self.n))
 
   def __add__(self, other):
-    if not isinstance(other, Number):
-      other = symbolic(other)
+    other = symbolic(other)
 
     if isinstance(other, Number):
       return symbolic(self.n.__add__(other.n))
@@ -243,8 +290,7 @@ class Number(_Symbolic):
     return symbolic(other.__radd__(self.n))
 
   def __sub__(self, other):
-    if not isinstance(other, Number):
-      other = symbolic(other)
+    other = symbolic(other)
 
     if isinstance(other, Number):
       return symbolic(self.n.__sub__(other.n))
@@ -526,7 +572,13 @@ class Fn(_Symbolic):
   def walk(self, fn):
     args = map(lambda x: x.walk(fn), self.args)
     newfn = self.fn.walk(fn)
-    return fn(newfn(*args))
+    rv = self
+    if newfn != self.fn:
+      rv = newfn(*args)
+    for i in range(len(args)):
+      if args[i] != self.args[i]:
+        rv = newfn(*args)
+    return fn(self)
 
   def substitute(self, subs):
     args = list(map(lambda x: x.substitute(subs), self.args))
@@ -621,6 +673,10 @@ class Fn(_Symbolic):
   @staticmethod
   def Mul(lhs, rhs, **kargs):
     return Fn(symbolic('*', **kargs), lhs, rhs, zero=symbolic(0), identity=symbolic(1), numeric='__mul__', **kargs)
+
+  @staticmethod
+  def Pow(lhs, rhs, **kargs):
+    return Fn(symbolic('**', **kargs), lhs, rhs, ridentity=symbolic(1), numeric='__pow__', **kargs)
 
   @staticmethod
   def RShift(lhs, rhs, **kargs):
