@@ -4,7 +4,7 @@ from setuptools import setup
 
 setup( \
   name='symath', \
-  version='0.1.1', \
+  version='0.1.2', \
   description='symbolic mathematics for python', \
   author='Brandon Niemczyk', \
   author_email='brandon.niemczyk@gmail.com', \
