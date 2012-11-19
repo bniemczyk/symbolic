@@ -37,5 +37,9 @@ class TestCoreClasses(unittest.TestCase):
     self.assertEqual(self.x ** 2 * self.x, self.x ** 3)
     self.assertEqual(self.x * self.x * self.x, self.x ** 3)
 
+  def test_fold_additions(self):
+    self.assertEqual(self.x + self.x, 2 * self.x)
+    self.assertEqual(self.x + self.y * self.x, (self.y + 1) * self.x)
+
 if __name__ == '__main__':
   unittest.main()

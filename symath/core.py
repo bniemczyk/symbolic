@@ -63,6 +63,28 @@ def _simplify_pass(exp):
     return exp
 
   exp = exp.walk(_convert_to_pow)
+
+  def _fold_additions(exp):
+    if exp[0].name == '+' and len(exp) == 3:
+      if exp[1] == exp[2]:
+        return exp[1] * 2
+
+      if exp[1].name == '*' and len(exp[1]) == 2:
+        if exp[1][1] == exp[2]:
+          return (exp[1][2] + 1) * exp[2]
+        if exp[1][2] == exp[2]:
+          return (exp[1][1] + 1) * exp[2]
+
+      if exp[2].name == '*' and len(exp[2]) == 2:
+        if exp[2][1] == exp[1]:
+          return (exp[2][2] + 1) * exp[1]
+        if exp[2][2] == exp[1]:
+          return (exp[2][1] + 1) * exp[1]
+
+    return exp
+
+  exp = exp.walk(_fold_additions)
+
   return exp
 
 def _simplify(exp):
