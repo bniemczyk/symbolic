@@ -9,27 +9,36 @@ import operator
 from memoize import Memoize
 
 
-def _order(a,b):
-  '''
-  used internally to put shit in canonical order
-  '''
-  if isinstance(a, Number):
-    if(isinstance(b, Number)):
-      return -1 if a.n < b.n else (0 if a.n == b.n else 1)
-    return -1
-  if isinstance(b, Number):
-    return 1
-  else:
-    return -1 if str(a) < str(b) else (0 if str(a) == str(b) else 1)
-
 class _Symbolic(tuple):
 
   def walk(self, *fns):
-    rv = self
-    for fn in fns:
-      rv = fn(rv)
-    #print "%s.walk() -> %s" % (self, rv)
-    return rv
+    if len(fns) > 1:
+      def _(exp):
+        for f in fns:
+          exp = f(exp)
+        return exp
+      return self.walk(_)
+
+    exp = self
+    fn = fns[0]
+    if len(exp) == 1:
+      oldexp = exp
+      exp = fn(exp)
+      while exp != oldexp:
+        oldexp = exp
+        exp = fn(exp)
+
+    else:
+      args = list(map(lambda x: x.walk(fn), exp.args))
+      oldexp = self
+      exp = fn(fn(exp[0])(*args))
+
+      #while exp != oldexp:
+      #  print '%s => %s' % (oldexp, exp)
+      #  oldexp = exp
+      #  exp = exp.walk(fn)
+
+    return exp
 
   def _dump(self):
     return {
@@ -183,177 +192,6 @@ class Number(_Symbolic):
   def __repr__(self):
     return str(self)
 
-  # arithmetic overrides
-  def __neg__(self):
-    return symbolic(self.n.__neg__())
-
-  def __mul__(self, other):
-    other = symbolic(other)
-
-    if isinstance(other, Number):
-      return symbolic(self.n.__mul__(other.n))
-
-    return symbolic(other.__rmul__(self))
-
-  def __pow__(self, other):
-    other = symbolic(other)
-
-    if isinstance(other, Number):
-      return symbolic(self.n ** other.n)
-
-    return symbolic(other.__rpow__(self))
-
-  def __rpow__(self, other):
-    other = symbolic(other)
-
-    if isinstance(other, Number):
-      return symbolic(other.n ** self.n)
-
-    return symbolic(other.__pow__(self))
-
-  def __div__(self, other):
-    other = symbolic(other)
-
-    if isinstance(other, Number):
-      return symbolic(self.n.__div__(other.n))
-
-    return symbolic(other.__rdiv__(self.n))
-
-  def __add__(self, other):
-    other = symbolic(other)
-
-    if isinstance(other, Number):
-      return symbolic(self.n.__add__(other.n))
-
-    return symbolic(other.__radd__(self.n))
-
-  def __sub__(self, other):
-    other = symbolic(other)
-
-    if isinstance(other, Number):
-      return symbolic(self.n.__sub__(other.n))
-
-    return symbolic(other.__rsub__(self.n))
-
-  def __or__(self, other):
-    other = symbolic(other)
-
-    if isinstance(other, Number):
-      return symbolic(int(self.n) | int(other.n))
-
-    return other.__ror__(self)
-
-  def __and__(self, other):
-    other = symbolic(other)
-
-    if isinstance(other, Number):
-      return symbolic(int(self.n) & int(other.n))
-
-    return symbolic(other).__rand__(int(self.n))
-
-  def __xor__(self, other):
-    other = symbolic(other)
-
-    if isinstance(other, Number):
-      return symbolic(int(self.n).__xor__(int(other.n)))
-
-    return symbolic(other.__rxor__(int(self.n)))
-
-  def __rshift__(self, other):
-    other = symbolic(other)
-
-    if isinstance(other, Number):
-      return symbolic(int(self.n) >> int(other.n))
-
-    return symbolic(other.__rrshift__(self))
-
-  def __lshift__(self, other):
-    other = symbolic(other)
-
-    if isinstance(other, Number):
-      return symbolic(int(self.n) << int(other.n))
-
-    return symbolic(other.__rlshift__(self))
-
-  def __rmul__(self, other):
-    if not isinstance(other, Number):
-      other = symbolic(other)
-
-    if isinstance(other, Number):
-      return symbolic(self.n.__rmul__(other.n))
-
-    return symbolic(other.__mul__(self.n))
-
-  def __rdiv__(self, other):
-    if not isinstance(other, Number):
-      other = symbolic(other)
-
-    if isinstance(other, Number):
-      return symbolic(self.n.__rdiv__(other.n))
-
-    return symbolic(other.__div__(self.n))
-
-  def __radd__(self, other):
-    if not isinstance(other, Number):
-      other = symbolic(other)
-
-    if isinstance(other, Number):
-      return symbolic(self.n.__radd__(other.n))
-
-    return symbolic(other.__add__(self.n))
-
-  def __rsub__(self, other):
-    if not isinstance(other, Number):
-      other = symbolic(other)
-
-    if isinstance(other, Number):
-      return symbolic(self.n.__rsub__(other.n))
-
-    return symbolic(other.__sub__(self.n))
-
-  def __ror__(self, other):
-    if not isinstance(other, Number):
-      other = symbolic(other)
-
-    if isinstance(other, Number):
-      return symbolic(int(self.n).__ror__(int(other.n)))
-
-    return symbolic(int(other.n).__or__(int(self.n)))
-
-  def __rand__(self, other):
-    if not isinstance(other, Number):
-      other = symbolic(other)
-
-    if isinstance(other, Number):
-      return symbolic(int(self.n).__rand__(int(other.n)))
-
-    return symbolic(int(other.n).__and__(int(self.n)))
-
-  def __rxor__(self, other):
-    if not isinstance(other, Number):
-      other = symbolic(other)
-
-    if isinstance(other, Number):
-      return symbolic(int(self.n) ^ int(other.n))
-
-    return symbolic(int(other.n) ^ int(self.n))
-
-  def __rrshift__(self, other):
-    other = symbolic(other)
-
-    if isinstance(other, Number):
-      return symbolic(int(other.n) >> int(self.n))
-
-    return symbolic(other.__rshift__(self))
-
-  def __rlshift__(self, other):
-    other = symbolic(other)
-
-    if isinstance(other, Number):
-      return symbolic(int(other.n) >> int(self.n))
-
-    return symbolic(other.__lshift__(self))
-
 class Wild(_Symbolic):
   '''
   wilds will not be equal even if they have the same name
@@ -369,6 +207,9 @@ class Wild(_Symbolic):
     self.kargs = kargs
     self.iswild = True
     return self
+
+  def __eq__(self, other):
+    return id(self) == id(other)
 
   def __str__(self):
     return self.name
@@ -440,25 +281,12 @@ class Fn(_Symbolic):
         except:
           raise BaseException("Could not %s %s %s" % (x, kargs['numeric'], y))
 
-
-    if 'zero' in kargs and kargs['zero'] in args:
-      return kargs['zero']
-
-    # if it's commutative, order the args in canonical order and call __new__ with that
-    if 'commutative' in kargs and kargs['commutative']:
-      args = list(args)
-      oldargs = copy.copy(args)
-      args.sort(cmp=_order)
-      for i in range(len(args)):
-        if oldargs[i] != args[i]:
-          return Fn.__new__(typ, fn, *args)
-
     self.name = fn.name
     self.fn = fn
     self.args = args
 
-    from simplify import simplify
-    rv = simplify(self._canonicalize())._canonicalize()
+    import simplify
+    rv = simplify.simplify(self._canonicalize())._canonicalize()
 
     return rv
 
@@ -489,18 +317,6 @@ class Fn(_Symbolic):
   def __call__(self, *args):
     return Fn(self, *args)
 
-  def walk(self, *fns):
-    args = list(map(lambda x: x.walk(*fns), self.args))
-    newfn = self.fn.walk(*fns)
-    rv = newfn(*args)
-    for fn in fns:
-      oldrv = rv
-      rv = fn(rv)
-      if oldrv != rv:
-        #print "%s.walk(%s) -> %s" % (oldrv, fn, rv)
-        pass
-    return rv
-
   def substitute(self, subs):
     args = list(map(lambda x: x.substitute(subs), self.args))
     newfn = self.fn.substitute(subs)
@@ -521,6 +337,7 @@ class Fn(_Symbolic):
     return len(self.args) + 1
 
   def _get_assoc_arguments(self):
+    import simplify
     rv = []
 
     args = list(self.args)
@@ -531,7 +348,7 @@ class Fn(_Symbolic):
       if (isinstance(b, Fn) and b.fn == self.fn) and not (isinstance(a, Fn) and a.fn == self.fn):
         return 1
 
-      return _order(a, b)
+      return simplify._order(a, b)
 
     args.sort(_)
 
@@ -545,6 +362,7 @@ class Fn(_Symbolic):
     return rv
 
   def _canonicalize(self):
+    import simplify
     # canonicalize the arguments first
     args = list(map(lambda x: x._canonicalize(), self.args))
     if tuple(args) != tuple(self.args):
@@ -555,7 +373,7 @@ class Fn(_Symbolic):
     if len(self.args) == 2 and 'associative' in self.kargs and self.kargs['associative']:
       args = self._get_assoc_arguments()
       oldargs = tuple(args)
-      args.sort(_order)
+      args.sort(simplify._order)
       if tuple(args) != oldargs:
         kargs = copy.copy(self.kargs)
         self = reduce(lambda a, b: Fn(self.fn, a, b), args)

@@ -8,7 +8,7 @@ setup( \
   description='symbolic mathematics for python', \
   author='Brandon Niemczyk', \
   author_email='brandon.niemczyk@gmail.com', \
-  url='http://github.com/bniemczyk/symbolics', \
+  url='http://github.com/bniemczyk/symbolic', \
   packages=['symath'], \
   test_suite='tests', \
   license='BSD', \
