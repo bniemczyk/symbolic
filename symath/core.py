@@ -377,6 +377,9 @@ class Wild(_Symbolic):
     self.iswild = True
     return self
 
+  def __eq__(self, other):
+    return id(self) == id(other)
+
   def __str__(self):
     return self.name
 
