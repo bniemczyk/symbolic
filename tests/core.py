@@ -48,7 +48,7 @@ class TestCoreClasses(unittest.TestCase):
   def test_fold_additions(self):
     self.assertEqual(self.x + self.x, 2 * self.x)
     self.assertEqual(self.x + self.y * self.x, (self.y + 1) * self.x)
-    self.assertEqual(str(self.x + self.y * self.x), '((1 + y) * x)')
+    self.assertEqual(str(self.x + self.y * self.x), '(x * (1 + y))')
 
   def test_equality(self):
     self.assertNotEqual(self.x(3), self.x(4))
@@ -62,5 +62,7 @@ class TestCoreClasses(unittest.TestCase):
   def test_addition_reorder(self):
     self.assertEqual(self.x + self.y * self.y + self.x, self.x + self.x + self.y * self.y)
 
+  def test_numeric_ops(self):
+    self.assertEqual((self.x + self.y).substitute({self.x: 3, self.y: 4}), 7)
 if __name__ == '__main__':
   unittest.main()

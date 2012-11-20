@@ -13,6 +13,13 @@ def _order(a,b):
     return -1
   elif isinstance(b, core.Number):
     return 1
+  elif isinstance(a, core.Symbol):
+    if(isinstance(b, core.Symbol)):
+      return -1 if a.name < b.name else (0 if a.name == b.name else 1)
+    return -1
+  elif isinstance(b, core.Symbol):
+    return 1
+
   else:
     return -1 if str(a) < str(b) else (0 if str(a) == str(b) else 1)
 
