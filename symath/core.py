@@ -460,18 +460,18 @@ def symbols(symstr, **kargs):
 
   return tuple(rv)
 
-def wilds(symstr):
+def wilds(symstr, **kargs):
   '''
   takes a string of variable names seperated by whitespace
   returns a tuple of wilds
   '''
   syms = symstr.split(' ')
   if len(syms) == 1:
-    return Wild(syms[0])
+    return Wild(syms[0], **kargs)
 
   rv = []
   for i in syms:
-    rv.append(Wild(i))
+    rv.append(Wild(i, **kargs))
 
   return tuple(rv)
 
