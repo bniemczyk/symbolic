@@ -3,47 +3,11 @@
 # for general use sympy is much more complete
 
 import traceback
-from memoize import Memoize
 import types
 import copy
 import operator
+from memoize import Memoize
 
-def _distribute(op1, op2, exp):
-  '''
-  TODO:
-    will failed if op2/op1 are seen but do not have 2 operands
-
-    FIXME: this can be change by specifying the order to walk
-     but walk will need to be updated
-    cannot use walk because it needs to distribute *before*
-    running on the children
-  '''
-  if exp[0].name == op1.name:
-    if exp[2][0].name == op2.name:
-      args = list(map(lambda x: exp[0](exp[1], x), exp[2].args))
-      exp = exp[2][0](*args)
-    elif exp[1][0].name == op2.name:
-      args = list(map(lambda x: exp[0](exp[2], x), exp[1].args))
-      exp = exp[1][0](*args)
-
-  if len(exp) > 1:
-    args = list(map(lambda x: _distribute(op1, op2, x), exp.args))
-    do_change = False
-    for i in range(len(args)):
-      if args[i] != exp.args[i]:
-        do_change = True
-        break
-    if do_change:
-      exp = exp[0](*args, **exp[0].kargs)
-
-  return exp
-
-def _simplify(exp):
-  _and,_or,_mul,_add,_sub = symbols('& | * + -')
-  exp = _distribute(_and, _or, exp)
-  exp = _distribute(_mul, _add, exp)
-  exp = _distribute(_mul, _sub, exp)
-  return exp
 
 def _order(a,b):
   '''
@@ -60,8 +24,12 @@ def _order(a,b):
 
 class _Symbolic(tuple):
 
-  def walk(self, fn):
-    return fn(self)
+  def walk(self, *fns):
+    rv = self
+    for fn in fns:
+      rv = fn(rv)
+    #print "%s.walk() -> %s" % (self, rv)
+    return rv
 
   def _dump(self):
     return {
@@ -87,7 +55,7 @@ class _Symbolic(tuple):
     return self
 
   def __eq__(self, other):
-    return id(self) == id(other)
+    return type(self) == type(other) and self.name == other.name
 
   def __ne__(self, other):
     return not self.__eq__(other)
@@ -105,66 +73,71 @@ class _Symbolic(tuple):
     return 1
 
   # arithmetic overrides
-  def __mul__(self, other, commutative=True, associative=True):
-    return Fn.Mul(self, other, commutative=commutative, associative=associative)
+  def __mul__(self, other):
+    return Fn.Mul(self, other)
 
-  def __div__(self, other, commutative=False, associative=False):
-    return Fn.Div(self, other, commutative=commutative, associative=associative)
+  def __pow__(self, other):
+    return Fn.Pow(self, other)
 
-  def __add__(self, other, commutative=True, associative=True):
-    return Fn.Add(self, other, commutative=commutative, associative=associative)
+  def __rpow__(self, other):
+    return Fn.Pow(other, self)
 
-  def __sub__(self, other, commutative=True, associative=True):
-    return Fn.Sub(self, other, commutative=commutative, associative=associative)
+  def __div__(self, other):
+    return Fn.Div(self, other)
 
-  def __or__(self, other, commutative=True, associative=True):
-    return Fn.BitOr(self, other, commutative=commutative, associative=associative)
+  def __add__(self, other):
+    return Fn.Add(self, other)
 
-  def __and__(self, other, commutative=True, associative=True):
-    return Fn.BitAnd(self, other, commutative=commutative, associative=associative)
+  def __sub__(self, other):
+    return Fn.Sub(self, other)
 
-  def __xor__(self, other, commutative=True, associative=False):
-    return Fn.BitXor(self, other, commutative=commutative, associative=associative)
+  def __or__(self, other):
+    return Fn.BitOr(self, other)
 
-  def __rmul__(self, other, commutative=True, associative=True):
-    return Fn.Mul(other, self, commutative=commutative, associative=associative)
+  def __and__(self, other):
+    return Fn.BitAnd(self, other)
 
-  def __rdiv__(self, other, commutative=False, associative=False):
-    return Fn.Div(other, self, commutative=commutative, associative=associative)
+  def __xor__(self, other):
+    return Fn.BitXor(self, other)
 
-  def __radd__(self, other, commutative=True, associative=True):
-    return Fn.Add(other, self, commutative=commutative, associative=associative)
+  def __rmul__(self, other):
+    return Fn.Mul(other, self)
 
-  def __rsub__(self, other, commutative=False, associative=False):
-    return Fn.Sub(other, self, commutative=commutative, associative=associative)
+  def __rdiv__(self, other):
+    return Fn.Div(other, self)
 
-  def __ror__(self, other, commutative=True, associative=True):
-    return Fn.BitOr(other, self, commutative=commutative, associative=associative)
+  def __radd__(self, other):
+    return Fn.Add(other, self)
 
-  def __rand__(self, other, commutative=True, associative=True):
-    return Fn.BitAnd(other, self, commutative=commutative, associative=associative)
+  def __rsub__(self, other):
+    return Fn.Sub(other, self)
 
-  def __rxor__(self, other, commutative=True, associative=False):
-    return Fn.BitXor(other, self, commutative=commutative, associative=associative)
+  def __ror__(self, other):
+    return Fn.BitOr(other, self)
 
-  def __rshift__(self, other, commutative=False, associative=False):
-    return Fn.RShift(self, other, commutative=commutative, associative=associative)
+  def __rand__(self, other):
+    return Fn.BitAnd(other, self)
 
-  def __lshift__(self, other, commutative=False, associative=False):
-    return Fn.LShift(self, other, commutative=commutative, associative=associative)
+  def __rxor__(self, other):
+    return Fn.BitXor(other, self)
 
-  def __rrshift__(self, other, commutative=False, associative=False):
-    return Fn.RShift(other, self, commutative=commutative, associative=associative)
+  def __rshift__(self, other):
+    return Fn.RShift(self, other)
 
-  def __rlshift__(self, other, commutative=False, associative=False):
-    return Fn.LShift(other, self, commutative=commutative, associative=associative)
+  def __lshift__(self, other):
+    return Fn.LShift(self, other)
+
+  def __rrshift__(self, other):
+    return Fn.RShift(other, self)
+
+  def __rlshift__(self, other):
+    return Fn.LShift(other, self)
 
   def __neg__(self):
     return self * -1
 
 class Boolean(int):
 
-  @Memoize
   def __new__(typ, b):
     self = int.__new__(typ, 1 if b else 0)
     self.name = str(b)
@@ -182,7 +155,6 @@ class Number(_Symbolic):
   IFORMAT = str
   FFORMAT = str
 
-  @Memoize
   def __new__(typ, n):
     n = float(n)
     self = _Symbolic.__new__(typ)
@@ -216,17 +188,31 @@ class Number(_Symbolic):
     return symbolic(self.n.__neg__())
 
   def __mul__(self, other):
-    if not isinstance(other, Number):
-      other = symbolic(other)
+    other = symbolic(other)
 
     if isinstance(other, Number):
       return symbolic(self.n.__mul__(other.n))
 
-    return symbolic(other.__rmul__(self.n))
+    return symbolic(other.__rmul__(self))
+
+  def __pow__(self, other):
+    other = symbolic(other)
+
+    if isinstance(other, Number):
+      return symbolic(self.n ** other.n)
+
+    return symbolic(other.__rpow__(self))
+
+  def __rpow__(self, other):
+    other = symbolic(other)
+
+    if isinstance(other, Number):
+      return symbolic(other.n ** self.n)
+
+    return symbolic(other.__pow__(self))
 
   def __div__(self, other):
-    if not isinstance(other, Number):
-      other = symbolic(other)
+    other = symbolic(other)
 
     if isinstance(other, Number):
       return symbolic(self.n.__div__(other.n))
@@ -234,8 +220,7 @@ class Number(_Symbolic):
     return symbolic(other.__rdiv__(self.n))
 
   def __add__(self, other):
-    if not isinstance(other, Number):
-      other = symbolic(other)
+    other = symbolic(other)
 
     if isinstance(other, Number):
       return symbolic(self.n.__add__(other.n))
@@ -243,8 +228,7 @@ class Number(_Symbolic):
     return symbolic(other.__radd__(self.n))
 
   def __sub__(self, other):
-    if not isinstance(other, Number):
-      other = symbolic(other)
+    other = symbolic(other)
 
     if isinstance(other, Number):
       return symbolic(self.n.__sub__(other.n))
@@ -393,7 +377,7 @@ class Wild(_Symbolic):
     return str(self)
 
   def __call__(self, *args):
-    return Fn(self, *args, **self.kargs)
+    return Fn(self, *args)
 
   def _dump(self):
     return {
@@ -418,23 +402,27 @@ class Symbol(Wild):
     self.iswild = False
     return self
 
-
 class Fn(_Symbolic):
 
-  @Memoize
-  def __new__(typ, fn, *args, **kargs):
+  def __new__(typ, fn, *args):
     '''
     arguments: Function, *arguments, **kargs
     valid keyword args:
       commutative (default False) - order of operands is unimportant
     '''
-    orig_kargs = copy.copy(kargs)
-    orig_args = copy.copy(args)
+
+    if not isinstance(fn, _Symbolic):
+      fn = symbolic(fn)
+      return Fn.__new__(typ, fn, *args)
 
     for i in args:
       if not isinstance(i, _Symbolic):
         args = list(map(symbolic, args))
-        return Fn.__new__(typ, fn, *args, **kargs)
+        return Fn.__new__(typ, fn, *args)
+
+    self = _Symbolic.__new__(typ)
+    kargs = fn.kargs
+    self.kargs = fn.kargs
 
     if len(args) == 2 and 'numeric' in kargs:
       x = args[0]
@@ -452,35 +440,6 @@ class Fn(_Symbolic):
         except:
           raise BaseException("Could not %s %s %s" % (x, kargs['numeric'], y))
 
-    if not isinstance(fn, _Symbolic):
-      fn = symbolic(fn, **kargs)
-      return Fn.__new__(typ, fn, *args, **kargs)
-
-    redo = False
-    for k in kargs:
-      if k not in fn.kargs:
-        fn.kargs[k] = kargs[k]
-        redo = True
-
-    for k in fn.kargs:
-      if k not in kargs:
-        kargs[k] = fn.kargs
-        redo = True
-
-    if redo:
-      return Fn.__new__(typ, fn, *args, **kargs)
-
-    self = _Symbolic.__new__(typ)
-
-    if len(args) == 2:
-      ridentity = kargs['ridentity'] if 'ridentity' in kargs else kargs['identity'] if 'identity' in kargs else None
-      lidentity = kargs['lidentity'] if 'lidentity' in kargs else kargs['identity'] if 'identity' in kargs else None
-
-      if lidentity != None and args[0] == lidentity:
-        return args[1]
-
-      if ridentity != None and args[1] == ridentity:
-        return args[0]
 
     if 'zero' in kargs and kargs['zero'] in args:
       return kargs['zero']
@@ -492,22 +451,29 @@ class Fn(_Symbolic):
       args.sort(cmp=_order)
       for i in range(len(args)):
         if oldargs[i] != args[i]:
-          return Fn.__new__(typ, fn, *args, **kargs)
+          return Fn.__new__(typ, fn, *args)
 
     self.name = fn.name
     self.fn = fn
     self.args = args
-    self.kargs = kargs
-    self.orig_kargs = orig_kargs
-    self.orig_args = orig_args
 
-    if self.fn.name == '+' and not self.kargs['associative']:
-      print 'NON ASSOC ADDITION'
-      traceback.print_stack()
-
-    rv = _simplify(self._canonicalize())._canonicalize()
+    from simplify import simplify
+    rv = simplify(self._canonicalize())._canonicalize()
 
     return rv
+
+  def __eq__(self, other):
+    if not type(self) == type(other):
+      return False
+
+    if len(self.args) != len(other.args):
+      return False
+
+    for i in range(len(self.args)):
+      if self.args[i] != other.args[i]:
+        return False
+
+    return self.fn == other.fn
 
   def _dump(self):
     return {
@@ -521,17 +487,24 @@ class Fn(_Symbolic):
         }
 
   def __call__(self, *args):
-    return Fn(self, *args, **self.kargs)
+    return Fn(self, *args)
 
-  def walk(self, fn):
-    args = map(lambda x: x.walk(fn), self.args)
-    newfn = self.fn.walk(fn)
-    return fn(newfn(*args))
+  def walk(self, *fns):
+    args = list(map(lambda x: x.walk(*fns), self.args))
+    newfn = self.fn.walk(*fns)
+    rv = newfn(*args)
+    for fn in fns:
+      oldrv = rv
+      rv = fn(rv)
+      if oldrv != rv:
+        #print "%s.walk(%s) -> %s" % (oldrv, fn, rv)
+        pass
+    return rv
 
   def substitute(self, subs):
     args = list(map(lambda x: x.substitute(subs), self.args))
     newfn = self.fn.substitute(subs)
-    self = Fn(newfn, *args, **self.kargs)
+    self = Fn(newfn, *args)
 
     if self in subs:
       self = subs[self]
@@ -575,7 +548,7 @@ class Fn(_Symbolic):
     # canonicalize the arguments first
     args = list(map(lambda x: x._canonicalize(), self.args))
     if tuple(args) != tuple(self.args):
-      self = Fn(self.fn, *args, **self.kargs)
+      self = Fn(self.fn, *args)
 
     # if it's associative and one of the arguments is another instance of the
     # same function, canonicalize the order
@@ -585,64 +558,65 @@ class Fn(_Symbolic):
       args.sort(_order)
       if tuple(args) != oldargs:
         kargs = copy.copy(self.kargs)
-        self = reduce(lambda a, b: Fn(self.fn, a, b, **kargs), args)
+        self = reduce(lambda a, b: Fn(self.fn, a, b), args)
 
     return self
 
   @staticmethod
-  def LessThan(lhs, rhs, **kargs):
-    return Fn(symbolic('<', **kargs), lhs, rhs, **kargs)
+  def LessThan(lhs, rhs):
+    return Fn(stdops.LessThan, lhs, rhs)
 
   @staticmethod
-  def GreaterThan(lhs, rhs, **kargs):
-    return Fn(symbolic('<', **kargs), rhs, lhs, **kargs)
+  def GreaterThan(lhs, rhs):
+    return Fn(stdops.GreaterThan, lhs, rhs)
 
   @staticmethod
-  def LessThanEq(lhs, rhs, **kargs):
-    return Fn(symbolic('<=', **kargs), lhs, rhs, **kargs)
+  def LessThanEq(lhs, rhs):
+    return Fn(stdops.LessThanEq, lhs, rhs)
 
   @staticmethod
-  def GreaterThanEq(lhs, rhs, **kargs):
-    return Fn(symbolic('<=', **kargs), rhs, lhs, **kargs)
+  def GreaterThanEq(lhs, rhs):
+    return Fn(stdops.GreaterThanEq, lhs, rhs)
 
   @staticmethod
-  def Add(lhs, rhs, **kargs):
-    return Fn(symbolic('+', **kargs), lhs, rhs, identity=symbolic(0), numeric='__add__', **kargs)
+  def Add(lhs, rhs):
+    return Fn(stdops.Add, lhs, rhs)
 
   @staticmethod
-  def Sub(lhs, rhs, **kargs):
-    #return Fn(symbolic('-', **kargs), lhs, rhs, identity=symbolic(0), numeric='__sub__', **kargs)
-    return Fn.Add(lhs, -rhs, **kargs)
+  def Sub(lhs, rhs):
+    return Fn(stdops.Sub, lhs, rhs)
 
   @staticmethod
-  def Div(lhs, rhs, **kargs):
-    return Fn(symbolic('/', **kargs), lhs, rhs, ridentity=symbolic(1), numeric='__div__', **kargs)
+  def Div(lhs, rhs):
+    return Fn(stdops.Div, lhs, rhs)
 
   @staticmethod
-  def Mul(lhs, rhs, **kargs):
-    return Fn(symbolic('*', **kargs), lhs, rhs, zero=symbolic(0), identity=symbolic(1), numeric='__mul__', **kargs)
+  def Mul(lhs, rhs):
+    return Fn(stdops.Mul, lhs, rhs)
 
   @staticmethod
-  def RShift(lhs, rhs, **kargs):
-    return Fn(symbolic('<<', **kargs), lhs, rhs, cast=int, ridentity=symbolic(0), numeric='__rshift__', **kargs)
+  def Pow(lhs, rhs):
+    return Fn(stdops.Pow, lhs, rhs)
 
   @staticmethod
-  def LShift(lhs, rhs, **kargs):
-    return Fn(symbolic('>>', **kargs), lhs, rhs, cast=int, ridentity=symbolic(0), numeric='__lshift__', **kargs)
+  def RShift(lhs, rhs):
+    return Fn(stdops.RShift, lhs, rhs)
 
   @staticmethod
-  def BitAnd(lhs, rhs, **kargs):
-    return Fn(symbolic('&', **kargs), lhs, rhs, cast=int, zero=symbolic(0), numeric='__and__', **kargs)
+  def LShift(lhs, rhs):
+    return Fn(stdops.LShift, lhs, rhs)
 
   @staticmethod
-  def BitOr(lhs, rhs, **kargs):
-    return Fn(symbolic('|', **kargs), lhs, rhs, cast=int, identity=symbolic(0), numeric='__or__', **kargs)
+  def BitAnd(lhs, rhs):
+    return Fn(stdops.BitAnd, lhs, rhs)
 
   @staticmethod
-  def BitXor(lhs, rhs, **kargs):
-    if lhs == rhs:
-      return symbolic(0)
-    return Fn(symbolic('^', **kargs), lhs, rhs, cast=int, identity=symbolic(0), numeric='__xor__', **kargs)
+  def BitOr(lhs, rhs):
+    return Fn(stdops.BitOr, lhs, rhs)
+
+  @staticmethod
+  def BitXor(lhs, rhs):
+    return Fn(stdops.BitXor, lhs, rhs)
 
   def __str__(self):
     if isinstance(self.fn, Symbol) and not self.name[0].isalnum() and len(self.args) == 2:
@@ -698,3 +672,5 @@ def symbolic(obj, **kargs):
   else:
     msg = "Unknown type (%s) %s passed to symbolic" % (type(obj), obj)
     raise BaseException(msg)
+
+import stdops

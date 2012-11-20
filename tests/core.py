@@ -7,6 +7,13 @@ class TestCoreClasses(unittest.TestCase):
   def setUp(self):
     self.x, self.y = symath.symbols('x y')
 
+  def test_identity(self):
+    self.assertEqual(self.x * 1, self.x)
+    self.assertEqual(self.x + 0, self.x)
+
+  def test_zero(self):
+    self.assertEqual(self.x * 0, 0)
+
   def test_index(self):
     self.assertEqual(len(self.x), 1)
     self.assertEqual(self.x[0], self.x)
@@ -31,6 +38,26 @@ class TestCoreClasses(unittest.TestCase):
 
   def test_nonsymbol_function_head_complete(self):
     self.assertEqual(str((self.x + self.y)(self.x + self.y)), '(x + y)((x + y))')
+
+  def test_pow(self):
+    self.assertEqual(self.x * self.x, self.x ** 2)
+    self.assertEqual(self.x ** 2 * self.x, self.x ** 3)
+    self.assertEqual(self.x * self.x * self.x, self.x ** 3)
+    self.assertEqual((2 * self.x) * self.x, self.x ** 2 * 2)
+
+  def test_fold_additions(self):
+    self.assertEqual(self.x + self.x, 2 * self.x)
+    self.assertEqual(self.x + self.y * self.x, (self.y + 1) * self.x)
+    self.assertEqual(str(self.x + self.y * self.x), '((1 + y) * x)')
+
+  def test_equality(self):
+    self.assertNotEqual(self.x(3), self.x(4))
+    self.assertEqual(self.x, self.x)
+    self.assertEqual(self.x(3), self.x(3))
+    self.assertEqual(self.x(self.y), self.x(self.y))
+
+  def test_subtractions(self):
+    self.assertEqual(self.x - self.y, self.x + (-self.y))
 
 if __name__ == '__main__':
   unittest.main()
