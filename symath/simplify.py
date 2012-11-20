@@ -1,6 +1,20 @@
 #!/usr/bin/env python
 import threading
 import stdops as stdops
+import core
+
+def _order(a,b):
+  '''
+  used internally to put shit in canonical order
+  '''
+  if isinstance(a, core.Number):
+    if(isinstance(b, core.Number)):
+      return -1 if a.n < b.n else (0 if a.n == b.n else 1)
+    return -1
+  elif isinstance(b, core.Number):
+    return 1
+  else:
+    return -1 if str(a) < str(b) else (0 if str(a) == str(b) else 1)
 
 def _remove_subtractions(exp):
   if exp[0].name == '-' and len(exp) == 3:
@@ -18,6 +32,13 @@ def _strip_identities(exp):
     if ridentity != None and exp[2] == ridentity:
       return exp[1].walk(_strip_identities)
 
+  return exp
+
+def _zero_terms(exp):
+  if hasattr(exp[0],'kargs') and 'zero' in exp[0].kargs:
+    for i in range(1, len(exp)):
+      if exp[1] == exp[0].kargs['zero']:
+        return exp[0].kargs['zero']
   return exp
 
 def _distribute(op1, op2):
@@ -69,10 +90,13 @@ def _fold_additions(exp):
         exp = (exp[1][1] + 1) * exp[2]
 
     if exp[2][0] == stdops.Mul and len(exp[2]) == 3:
-      if exp[2][1] == exp[1]:
-        exp = (exp[2][2] + 1) * exp[1]
-      if exp[2][2] == exp[1]:
-        exp = (exp[2][1] + 1) * exp[1]
+      try:
+        if exp[2][1] == exp[1]:
+          exp = (exp[2][2] + 1) * exp[1]
+        elif exp[2][2] == exp[1]:
+          exp = (exp[2][1] + 1) * exp[1]
+      except:
+        print 'wtf.. %s [%d] %s [%d]' % (exp[1], len(exp[1]), exp[2], len(exp[2]))
 
   return exp
 
@@ -89,8 +113,20 @@ def _convert_to_pow(exp):
       rv = rv * (k ** fs[k])
   return rv
 
+def _args(exp):
+  return list(map(lambda x: exp[x], range(1, len(exp))))
+
+def _commutative_reorder(exp):
+  oexp = exp
+  if len(exp) > 1 and 'commutative' in exp[0].kargs:
+    args = list(map(lambda x: x.walk(_commutative_reorder), _args(exp)))
+    args.sort(cmp=_order)
+    exp = exp[0](*args)
+  return exp
+
 def _simplify_pass(exp):
   exp = exp.walk(\
+    _convert_to_pow, \
     _strip_identities, \
     _remove_subtractions, \
     _strip_identities, \
@@ -98,13 +134,15 @@ def _simplify_pass(exp):
     _strip_identities, \
     _distribute(stdops.Mul, stdops.Add), \
     _strip_identities, \
-    _convert_to_pow, \
-    _strip_identities, \
     _fold_additions, \
-    _strip_identities
+    _strip_identities, \
+    _zero_terms, \
+    _strip_identities, \
+    _commutative_reorder, \
+    _strip_identities \
     )
 
-  return exp
+  return exp.walk(_strip_identities)
 
 # FIXME/TODO:
 #  using a lock for this is super retarded, but it's a quick easy hack
@@ -114,6 +152,9 @@ _simplify_lock = threading.RLock()
 _in_simplify = False
 
 def simplify(exp):
+  '''
+  puts an expression into a canonical form (that is hopefully simple)
+  '''
   global _in_simplify
   global _simplify_lock
 

@@ -59,5 +59,8 @@ class TestCoreClasses(unittest.TestCase):
   def test_subtractions(self):
     self.assertEqual(self.x - self.y, self.x + (-self.y))
 
+  def test_addition_reorder(self):
+    self.assertEqual(self.x + self.y * self.y + self.x, self.x + self.x + self.y * self.y)
+
 if __name__ == '__main__':
   unittest.main()

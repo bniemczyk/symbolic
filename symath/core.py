@@ -9,27 +9,34 @@ import operator
 from memoize import Memoize
 
 
-def _order(a,b):
-  '''
-  used internally to put shit in canonical order
-  '''
-  if isinstance(a, Number):
-    if(isinstance(b, Number)):
-      return -1 if a.n < b.n else (0 if a.n == b.n else 1)
-    return -1
-  if isinstance(b, Number):
-    return 1
-  else:
-    return -1 if str(a) < str(b) else (0 if str(a) == str(b) else 1)
-
 class _Symbolic(tuple):
 
   def walk(self, *fns):
-    rv = self
-    for fn in fns:
-      rv = fn(rv)
-    #print "%s.walk() -> %s" % (self, rv)
-    return rv
+    if len(fns) > 1:
+      def _(exp):
+        for f in fns:
+          exp = f(exp)
+        return exp
+      return self.walk(_)
+
+    exp = self
+    fn = fns[0]
+    if len(exp) == 1:
+      oldexp = exp
+      exp = fn(exp)
+      while exp != oldexp:
+        oldexp = exp
+        exp = fn(exp)
+
+    else:
+      args = list(map(lambda x: x.walk(fn), exp.args))
+      oldexp = self
+      exp = fn(fn(exp[0])(*args))
+      while exp != oldexp:
+        oldexp = exp
+        exp = exp.walk(fn)
+
+    return exp
 
   def _dump(self):
     return {
@@ -440,25 +447,12 @@ class Fn(_Symbolic):
         except:
           raise BaseException("Could not %s %s %s" % (x, kargs['numeric'], y))
 
-
-    if 'zero' in kargs and kargs['zero'] in args:
-      return kargs['zero']
-
-    # if it's commutative, order the args in canonical order and call __new__ with that
-    if 'commutative' in kargs and kargs['commutative']:
-      args = list(args)
-      oldargs = copy.copy(args)
-      args.sort(cmp=_order)
-      for i in range(len(args)):
-        if oldargs[i] != args[i]:
-          return Fn.__new__(typ, fn, *args)
-
     self.name = fn.name
     self.fn = fn
     self.args = args
 
-    from simplify import simplify
-    rv = simplify(self._canonicalize())._canonicalize()
+    import simplify
+    rv = simplify.simplify(self._canonicalize())._canonicalize()
 
     return rv
 
@@ -489,18 +483,6 @@ class Fn(_Symbolic):
   def __call__(self, *args):
     return Fn(self, *args)
 
-  def walk(self, *fns):
-    args = list(map(lambda x: x.walk(*fns), self.args))
-    newfn = self.fn.walk(*fns)
-    rv = newfn(*args)
-    for fn in fns:
-      oldrv = rv
-      rv = fn(rv)
-      if oldrv != rv:
-        #print "%s.walk(%s) -> %s" % (oldrv, fn, rv)
-        pass
-    return rv
-
   def substitute(self, subs):
     args = list(map(lambda x: x.substitute(subs), self.args))
     newfn = self.fn.substitute(subs)
@@ -521,6 +503,7 @@ class Fn(_Symbolic):
     return len(self.args) + 1
 
   def _get_assoc_arguments(self):
+    import simplify
     rv = []
 
     args = list(self.args)
@@ -531,7 +514,7 @@ class Fn(_Symbolic):
       if (isinstance(b, Fn) and b.fn == self.fn) and not (isinstance(a, Fn) and a.fn == self.fn):
         return 1
 
-      return _order(a, b)
+      return simplify._order(a, b)
 
     args.sort(_)
 
@@ -545,6 +528,7 @@ class Fn(_Symbolic):
     return rv
 
   def _canonicalize(self):
+    import simplify
     # canonicalize the arguments first
     args = list(map(lambda x: x._canonicalize(), self.args))
     if tuple(args) != tuple(self.args):
@@ -555,7 +539,7 @@ class Fn(_Symbolic):
     if len(self.args) == 2 and 'associative' in self.kargs and self.kargs['associative']:
       args = self._get_assoc_arguments()
       oldargs = tuple(args)
-      args.sort(_order)
+      args.sort(simplify._order)
       if tuple(args) != oldargs:
         kargs = copy.copy(self.kargs)
         self = reduce(lambda a, b: Fn(self.fn, a, b), args)
