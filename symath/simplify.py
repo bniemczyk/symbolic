@@ -2,6 +2,7 @@
 import threading
 import stdops as stdops
 import core
+import copy
 
 def _order(a,b):
   '''
@@ -22,6 +23,27 @@ def _order(a,b):
 
   else:
     return -1 if str(a) < str(b) else (0 if str(a) == str(b) else 1)
+
+def _assoc_reorder(exp):
+  if len(exp) == 1:
+    return exp
+
+  # canonicalize the arguments first
+  args = list(map(lambda x: _assoc_reorder(x), exp.args))
+  if tuple(args) != tuple(exp.args):
+    exp = Fn(exp.fn, *args)
+
+  # if it's associative and one of the arguments is another instance of the
+  # same function, canonicalize the order
+  if len(exp.args) == 2 and 'associative' in exp.kargs and exp.kargs['associative']:
+    args = exp._get_assoc_arguments()
+    oldargs = tuple(args)
+    args.sort(_order)
+    if tuple(args) != oldargs:
+      kargs = copy.copy(exp.kargs)
+      exp = reduce(lambda a, b: exp.fn(a,b), args)
+
+  return exp
 
 def _remove_subtractions(exp):
   if exp[0].name == '-' and len(exp) == 3:
@@ -160,6 +182,8 @@ def _simplify_pass(exp):
     _distribute(stdops.BitAnd, stdops.BitOr), \
     _strip_identities, \
     _distribute(stdops.Mul, stdops.Add), \
+    _strip_identities, \
+    _assoc_reorder, \
     _strip_identities \
     )
 
@@ -174,7 +198,8 @@ _in_simplify = False
 
 def simplify(exp):
   '''
-  puts an expression into a canonical form (that is hopefully simple)
+  attempts to simplify an expression
+  is knowledgeable of the operations defined in symath.stdops
   '''
   global _in_simplify
   global _simplify_lock

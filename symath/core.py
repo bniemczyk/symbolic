@@ -46,13 +46,6 @@ class _Symbolic(tuple):
         'id': id(self)
         }
 
-  def _canonicalize(self):
-    '''
-    overridden by some subtypes
-     - should return a canonical version of itself
-    '''
-    return self
-
   def substitute(self, subs):
     '''
     takes a dictionary of substitutions
@@ -286,7 +279,7 @@ class Fn(_Symbolic):
     self.args = args
 
     import simplify
-    rv = simplify.simplify(self._canonicalize())._canonicalize()
+    rv = simplify.simplify(self)
 
     return rv
 
@@ -360,25 +353,6 @@ class Fn(_Symbolic):
         rv.append(i)
 
     return rv
-
-  def _canonicalize(self):
-    import simplify
-    # canonicalize the arguments first
-    args = list(map(lambda x: x._canonicalize(), self.args))
-    if tuple(args) != tuple(self.args):
-      self = Fn(self.fn, *args)
-
-    # if it's associative and one of the arguments is another instance of the
-    # same function, canonicalize the order
-    if len(self.args) == 2 and 'associative' in self.kargs and self.kargs['associative']:
-      args = self._get_assoc_arguments()
-      oldargs = tuple(args)
-      args.sort(simplify._order)
-      if tuple(args) != oldargs:
-        kargs = copy.copy(self.kargs)
-        self = reduce(lambda a, b: Fn(self.fn, a, b), args)
-
-    return self
 
   @staticmethod
   def LessThan(lhs, rhs):
