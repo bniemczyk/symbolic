@@ -28,7 +28,7 @@ def _remove_subtractions(exp):
     return exp[1] + (-exp[2])
   return exp
 
-def _strip_identities(exp):
+def _strip_identities_pass(exp):
   if len(exp) == 3:
     kargs = exp[0].kargs
     lidentity = kargs['lidentity'] if 'lidentity' in kargs else kargs['identity'] if 'identity' in kargs else None
@@ -40,6 +40,14 @@ def _strip_identities(exp):
       return exp[1].walk(_strip_identities)
 
   return exp
+
+def _strip_identities(exp):
+  rv = exp.walk(_strip_identities_pass)
+  while rv != exp:
+    exp = rv
+    rv = exp.walk(_strip_identities_pass)
+
+  return rv
 
 def _zero_terms(exp):
   if hasattr(exp[0],'kargs') and 'zero' in exp[0].kargs:
@@ -103,7 +111,7 @@ def _fold_additions(exp):
         elif exp[2][2] == exp[1]:
           exp = (exp[2][1] + 1) * exp[1]
       except:
-        print 'wtf.. %s [%d] %s [%d]' % (exp[1], len(exp[1]), exp[2], len(exp[2]))
+        print 'FOLD ADDITIONS: wtf.. %s [%d] %s [%d]' % (exp[1], len(exp[1]), exp[2], len(exp[2]))
 
   return exp
 
@@ -133,6 +141,8 @@ def _commutative_reorder(exp):
 
 def _simplify_pass(exp):
   exp = exp.walk(\
+    _commutative_reorder, \
+    _strip_identities, \
     _convert_to_pow, \
     _strip_identities, \
     _remove_subtractions, \
@@ -146,6 +156,10 @@ def _simplify_pass(exp):
     _zero_terms, \
     _strip_identities, \
     _commutative_reorder, \
+    _strip_identities, \
+    _distribute(stdops.BitAnd, stdops.BitOr), \
+    _strip_identities, \
+    _distribute(stdops.Mul, stdops.Add), \
     _strip_identities \
     )
 

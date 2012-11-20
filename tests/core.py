@@ -48,7 +48,6 @@ class TestCoreClasses(unittest.TestCase):
   def test_fold_additions(self):
     self.assertEqual(self.x + self.x, 2 * self.x)
     self.assertEqual(self.x + self.y * self.x, (self.y + 1) * self.x)
-    self.assertEqual(str(self.x + self.y * self.x), '(x * (1 + y))')
 
   def test_equality(self):
     self.assertNotEqual(self.x(3), self.x(4))
@@ -64,5 +63,16 @@ class TestCoreClasses(unittest.TestCase):
 
   def test_numeric_ops(self):
     self.assertEqual((self.x + self.y).substitute({self.x: 3, self.y: 4}), 7)
+
+  def test_failure_case_1(self):
+    self.assertEqual(self.y + self.x * self.y + self.x, self.x + self.y + self.x * self.y)
+
+  def test_wilds_equality(self):
+    w,v = symath.wilds('w w')
+    self.assertNotEqual(w, v)
+    self.assertNotEqual(w(0), v(0))
+    self.assertEqual(w(0), w(0))
+    self.assertEqual(v(0), v(0))
+
 if __name__ == '__main__':
   unittest.main()

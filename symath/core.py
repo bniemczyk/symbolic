@@ -32,9 +32,11 @@ class _Symbolic(tuple):
       args = list(map(lambda x: x.walk(fn), exp.args))
       oldexp = self
       exp = fn(fn(exp[0])(*args))
-      while exp != oldexp:
-        oldexp = exp
-        exp = exp.walk(fn)
+
+      #while exp != oldexp:
+      #  print '%s => %s' % (oldexp, exp)
+      #  oldexp = exp
+      #  exp = exp.walk(fn)
 
     return exp
 
