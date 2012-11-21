@@ -10,14 +10,13 @@ def extract(a,b,rv=None):
   if rv == None:
     rv = {}
 
-  if len(a) != len(b):
-    return None
-
   if isinstance(b, core.Wild):
     if b.name in rv and rv[b.name] != a:
       return None
     rv[b.name] = a
     return rv
+  elif len(a) != len(b):
+    return None
   elif len(b) > 1:
     for i in range(len(b)):
       if extract(a[i], b[i], rv) == None:
@@ -41,7 +40,8 @@ def match(a, b, valuestore=None):
   if d == None:
     return False
 
-  for k in d:
-    valuestore[k] = d[k]
+  if valuestore != None:
+    for k in d:
+      valuestore[k] = d[k]
 
   return True

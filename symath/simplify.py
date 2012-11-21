@@ -34,7 +34,7 @@ def _assoc_reorder(exp):
   # canonicalize the arguments first
   args = list(map(lambda x: _assoc_reorder(x), exp.args))
   if tuple(args) != tuple(exp.args):
-    exp = Fn(exp.fn, *args)
+    exp = core.Fn(exp.fn, *args)
 
   # if it's associative and one of the arguments is another instance of the
   # same function, canonicalize the order
@@ -49,20 +49,26 @@ def _assoc_reorder(exp):
   return exp
 
 def _remove_subtractions(exp):
-  if exp[0].name == '-' and len(exp) == 3:
-    return exp[1] + (-exp[2])
-  return exp
+  a,b = core.wilds('a b')
+  vals = {}
+  if exp.match(stdops.Sub(a,b), vals):
+    return vals['a'] + (-vals['b'])
+  else:
+    return exp
 
 def _strip_identities_pass(exp):
-  if len(exp) == 3:
+  a,b,c = core.wilds('a b c')
+  vals = {}
+
+  if exp.match(a(b, c)):
     kargs = exp[0].kargs
     lidentity = kargs['lidentity'] if 'lidentity' in kargs else kargs['identity'] if 'identity' in kargs else None
     ridentity = kargs['ridentity'] if 'ridentity' in kargs else kargs['identity'] if 'identity' in kargs else None
-
-    if lidentity != None and exp[1] == lidentity:
-      return exp[2].walk(_strip_identities)
-    if ridentity != None and exp[2] == ridentity:
-      return exp[1].walk(_strip_identities)
+    
+    if lidentity != None and exp.match(a(lidentity, b), vals):
+      return vals['b'].walk(_strip_identities)
+    elif ridentity != None and exp.match(a(b, ridentity), vals):
+      return vals['b'].walk(_strip_identities)
 
   return exp
 
