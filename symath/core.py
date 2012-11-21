@@ -138,13 +138,21 @@ class _Symbolic(tuple):
   def __neg__(self):
     return self * -1
 
-class Boolean(int):
+class _KnownValue(_Symbolic):
+  def value(self):
+    raise BaseException('not implemented')
 
+class Boolean(_KnownValue):
+
+  @Memoize
   def __new__(typ, b):
-    self = int.__new__(typ, 1 if b else 0)
+    self = _KnownValue.__new__(typ)
     self.name = str(b)
     self.boolean = b
     return self
+
+  def value(self):
+    return bool(self.boolean)
 
   def __str__(self):
     return str(self.boolean)
@@ -152,17 +160,28 @@ class Boolean(int):
   def __repr__(self):
     return str(self)
 
-class Number(_Symbolic):
+  def __eq__(self, other):
+    if isinstance(other, Boolean):
+      return bool(self.boolean) == bool(other.boolean)
+    elif isinstance(other, _Symbolic):
+      return other.__eq__(self)
+    else:
+      return bool(self.boolean) == other
+
+class Number(_KnownValue):
 
   IFORMAT = str
   FFORMAT = str
 
   def __new__(typ, n):
     n = float(n)
-    self = _Symbolic.__new__(typ)
+    self = _KnownValue.__new__(typ)
     self.name = str(n)
     self.n = n
     return self
+
+  def value(self):
+    return self.n
 
   def __eq__(self, other):
     if isinstance(other, _Symbolic):
@@ -257,22 +276,6 @@ class Fn(_Symbolic):
     self = _Symbolic.__new__(typ)
     kargs = fn.kargs
     self.kargs = fn.kargs
-
-    if len(args) == 2 and 'numeric' in kargs:
-      x = args[0]
-      y = args[1]
-      if isinstance(x, Number) and isinstance(y, Number):
-        if 'cast' in kargs and kargs['cast'] != None:
-          x = kargs['cast'](x.n)
-          y = kargs['cast'](y.n)
-        else:
-          x = x.n
-          y = y.n
-        try:
-          nfn = getattr(operator, kargs['numeric'])
-          return symbolic(nfn(x,y))
-        except:
-          raise BaseException("Could not %s %s %s" % (x, kargs['numeric'], y))
 
     self.name = fn.name
     self.fn = fn

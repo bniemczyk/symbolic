@@ -74,5 +74,18 @@ class TestCoreClasses(unittest.TestCase):
     self.assertEqual(w(0), w(0))
     self.assertEqual(v(0), v(0))
 
+
+  def test_logical_operands(self):
+    t = symath.symbolic(True)
+    f = symath.symbolic(False)
+
+    self.assertEqual(symath.stdops.LogicalAnd(t, f), f)
+    self.assertEqual(symath.stdops.LogicalAnd(t, f), False)
+    self.assertEqual(symath.stdops.LogicalOr(t, f), t)
+    self.assertEqual(symath.stdops.LogicalOr(t, f), True)
+    self.assertEqual(symath.stdops.LogicalXor(t, t), False)
+    self.assertEqual(symath.stdops.LogicalXor(f, t), True)
+    self.assertEqual(symath.stdops.LogicalXor(f, f), False)
+
 if __name__ == '__main__':
   unittest.main()

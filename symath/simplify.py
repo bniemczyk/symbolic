@@ -3,6 +3,7 @@ import threading
 import stdops as stdops
 import core
 import copy
+import operator
 
 def _order(a,b):
   '''
@@ -74,7 +75,7 @@ def _strip_identities(exp):
 def _zero_terms(exp):
   if hasattr(exp[0],'kargs') and 'zero' in exp[0].kargs:
     for i in range(1, len(exp)):
-      if exp[1] == exp[0].kargs['zero']:
+      if exp[1] == exp[0].kargs['zero'] or exp[2] == exp[0].kargs['zero']:
         return exp[0].kargs['zero']
   return exp
 
@@ -90,6 +91,22 @@ def _distribute(op1, op2):
 
     return rv
   return _
+
+def _simplify_known_values(exp):
+  if len(exp) > 1 and 'numeric' in exp[0].kargs:
+    args = []
+    for i in range(1, len(exp)):
+      if not isinstance(exp[i], core._KnownValue):
+        return exp
+      if 'cast' in exp[0].kargs:
+        args.append(exp[0].kargs['cast'](exp[i].value()))
+      else:
+        args.append(exp[i].value())
+
+    nfn = getattr(operator, exp[0].kargs['numeric'])
+    return core.symbolic(nfn(*args))
+  else:
+    return exp
 
 def _get_factors(exp):
   rv = {}
@@ -164,6 +181,8 @@ def _commutative_reorder(exp):
 def _simplify_pass(exp):
   exp = exp.walk(\
     _commutative_reorder, \
+    _strip_identities, \
+    _simplify_known_values, \
     _strip_identities, \
     _convert_to_pow, \
     _strip_identities, \
