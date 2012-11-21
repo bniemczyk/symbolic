@@ -1,0 +1,3 @@
+[submodule "z3"]
+	path = z3
+	url = https://git01.codeplex.com/z3

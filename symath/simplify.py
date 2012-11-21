@@ -2,6 +2,8 @@
 import threading
 import stdops as stdops
 import core
+import copy
+import operator
 
 def _order(a,b):
   '''
@@ -22,6 +24,27 @@ def _order(a,b):
 
   else:
     return -1 if str(a) < str(b) else (0 if str(a) == str(b) else 1)
+
+def _assoc_reorder(exp):
+  if len(exp) == 1:
+    return exp
+
+  # canonicalize the arguments first
+  args = list(map(lambda x: _assoc_reorder(x), exp.args))
+  if tuple(args) != tuple(exp.args):
+    exp = Fn(exp.fn, *args)
+
+  # if it's associative and one of the arguments is another instance of the
+  # same function, canonicalize the order
+  if len(exp.args) == 2 and 'associative' in exp.kargs and exp.kargs['associative']:
+    args = exp._get_assoc_arguments()
+    oldargs = tuple(args)
+    args.sort(_order)
+    if tuple(args) != oldargs:
+      kargs = copy.copy(exp.kargs)
+      exp = reduce(lambda a, b: exp.fn(a,b), args)
+
+  return exp
 
 def _remove_subtractions(exp):
   if exp[0].name == '-' and len(exp) == 3:
@@ -52,7 +75,7 @@ def _strip_identities(exp):
 def _zero_terms(exp):
   if hasattr(exp[0],'kargs') and 'zero' in exp[0].kargs:
     for i in range(1, len(exp)):
-      if exp[1] == exp[0].kargs['zero']:
+      if exp[1] == exp[0].kargs['zero'] or exp[2] == exp[0].kargs['zero']:
         return exp[0].kargs['zero']
   return exp
 
@@ -68,6 +91,22 @@ def _distribute(op1, op2):
 
     return rv
   return _
+
+def _simplify_known_values(exp):
+  if len(exp) > 1 and 'numeric' in exp[0].kargs:
+    args = []
+    for i in range(1, len(exp)):
+      if not isinstance(exp[i], core._KnownValue):
+        return exp
+      if 'cast' in exp[0].kargs:
+        args.append(exp[0].kargs['cast'](exp[i].value()))
+      else:
+        args.append(exp[i].value())
+
+    nfn = getattr(operator, exp[0].kargs['numeric'])
+    return core.symbolic(nfn(*args))
+  else:
+    return exp
 
 def _get_factors(exp):
   rv = {}
@@ -143,6 +182,8 @@ def _simplify_pass(exp):
   exp = exp.walk(\
     _commutative_reorder, \
     _strip_identities, \
+    _simplify_known_values, \
+    _strip_identities, \
     _convert_to_pow, \
     _strip_identities, \
     _remove_subtractions, \
@@ -160,6 +201,8 @@ def _simplify_pass(exp):
     _distribute(stdops.BitAnd, stdops.BitOr), \
     _strip_identities, \
     _distribute(stdops.Mul, stdops.Add), \
+    _strip_identities, \
+    _assoc_reorder, \
     _strip_identities \
     )
 
@@ -174,7 +217,8 @@ _in_simplify = False
 
 def simplify(exp):
   '''
-  puts an expression into a canonical form (that is hopefully simple)
+  attempts to simplify an expression
+  is knowledgeable of the operations defined in symath.stdops
   '''
   global _in_simplify
   global _simplify_lock
