@@ -67,14 +67,6 @@ class TestCoreClasses(unittest.TestCase):
   def test_failure_case_1(self):
     self.assertEqual(self.y + self.x * self.y + self.x, self.x + self.y + self.x * self.y)
 
-  def test_wilds_equality(self):
-    w,v = symath.wilds('w w')
-    self.assertNotEqual(w, v)
-    self.assertNotEqual(w(0), v(0))
-    self.assertEqual(w(0), w(0))
-    self.assertEqual(v(0), v(0))
-
-
   def test_logical_operands(self):
     t = symath.symbolic(True)
     f = symath.symbolic(False)
@@ -86,6 +78,17 @@ class TestCoreClasses(unittest.TestCase):
     self.assertEqual(symath.stdops.LogicalXor(t, t), False)
     self.assertEqual(symath.stdops.LogicalXor(f, t), True)
     self.assertEqual(symath.stdops.LogicalXor(f, f), False)
+
+  def test_wilds(self):
+    '''
+    wilds should match anything symbolic
+    '''
+    w1= symath.wild()
+    w2 = symath.wild()
+
+    self.assertEqual(w1, w2)
+    self.assertNotEqual(id(w1), id(w2))
+    self.assertEqual(w1, self.x * self.y + 3)
 
 if __name__ == '__main__':
   unittest.main()
