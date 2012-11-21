@@ -6,10 +6,16 @@ import traceback
 import types
 import copy
 import operator
+import random
+import string
 from memoize import Memoize
 
 
 class _Symbolic(tuple):
+
+  def match(self, other, valuestore=None):
+    import match
+    return match.match(self, other, valuestore)
 
   def walk(self, *fns):
     if len(fns) > 1:
@@ -216,7 +222,7 @@ class Wild(_Symbolic):
     return self
 
   def __eq__(self, other):
-    return True
+    return other.name == self.name if type(other) == type(self) else False
 
   def __str__(self):
     return self.name
@@ -235,7 +241,7 @@ class Wild(_Symbolic):
         'id': id(self)
         }
 
-class Symbol(Wild):
+class Symbol(_Symbolic):
   '''
   symbols with the same name and kargs will be equal
   (and in fact are guaranteed to be the same instance)
@@ -465,7 +471,9 @@ def wilds(symstr, **kargs):
 
   return tuple(rv)
 
-def wild(name='wild', **kargs):
+def wild(name=None, **kargs):
+  if name == None:
+    name = ''.join(random.choice(string.ascii_lowercase) for x in range(12))
   return Wild(name, **kargs)
 
 def symbolic(obj, **kargs): 

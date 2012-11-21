@@ -79,16 +79,10 @@ class TestCoreClasses(unittest.TestCase):
     self.assertEqual(symath.stdops.LogicalXor(f, t), True)
     self.assertEqual(symath.stdops.LogicalXor(f, f), False)
 
-  def test_wilds(self):
-    '''
-    wilds should match anything symbolic
-    '''
-    w1= symath.wild()
-    w2 = symath.wild()
-
-    self.assertEqual(w1, w2)
-    self.assertNotEqual(id(w1), id(w2))
-    self.assertEqual(w1, self.x * self.y + 3)
+  def test_wilds_equality(self):
+    self.assertEqual(symath.wild('a'), symath.wild('a'))
+    self.assertNotEqual(symath.wild('a'), symath.wild('b'))
+    self.assertNotEqual(symath.wild(), symath.wild())
 
 if __name__ == '__main__':
   unittest.main()

@@ -5,6 +5,8 @@ import core
 import copy
 import operator
 
+from core import wild
+
 def _order(a,b):
   '''
   used internally to put shit in canonical order
@@ -230,6 +232,7 @@ def simplify(exp):
     _in_simplify = True
     sexp = _simplify_pass(exp)
     while sexp != exp:
+      #print '%s => %s' % (exp, sexp)
       exp = sexp
       sexp = _simplify_pass(exp)
   
