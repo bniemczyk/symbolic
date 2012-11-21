@@ -10,6 +10,16 @@ import random
 import string
 from memoize import Memoize
 
+def collect(exp, fn):
+  rv = set()
+  
+  def _collect(exp):
+    if fn(exp):
+      rv.add(exp)
+    return exp
+
+  exp.walk(collect)
+  return rv
 
 class _Symbolic(tuple):
 
@@ -79,6 +89,19 @@ class _Symbolic(tuple):
 
   def __len__(self):
     return 1
+
+  # comparison operations notice we don't override __eq__
+  def __gt__(self, obj):
+    return Fn.GreaterThan(self, obj)
+
+  def __ge__(self, obj):
+    return Fn.GreaterThanEq(self, obj)
+
+  def __lt__(self, obj):
+    return Fn.LessThan(self, obj)
+
+  def __le__(self, obj):
+    return Fn.LessThanEq(self, obj)
 
   # arithmetic overrides
   def __mul__(self, other):
@@ -273,6 +296,9 @@ class Symbol(_Symbolic):
     self = Wild.__new__(typ, name)
     self.name = name
     self.kargs = kargs
+    self.is_integer = False # set to true to force domain to integers
+    self.is_bitvector = 0 # set to the size of the bitvector if it is a bitvector
+    self.is_bool = False # set to true if the symbol represents a boolean value
     return self
 
   def __eq__(self, other):
