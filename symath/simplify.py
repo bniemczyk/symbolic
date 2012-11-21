@@ -172,6 +172,19 @@ def _convert_to_pow(exp):
 def _args(exp):
   return list(map(lambda x: exp[x], range(1, len(exp))))
 
+def _simplify_bitops(exp):
+  a,b = core.wilds('a b')
+  vals = core.WildResults()
+
+  if exp.match(a ^ a):
+    return core.symbolic(0)
+  elif exp.match(a | a, vals):
+    return vals.a
+  elif exp.match(a & a, vals):
+    return vals.a
+  else:
+    return exp
+
 def _commutative_reorder(exp):
   oexp = exp
   if len(exp) > 1 and 'commutative' in exp[0].kargs:
@@ -205,7 +218,9 @@ def _simplify_pass(exp):
     _distribute(stdops.Mul, stdops.Add), \
     _strip_identities, \
     _assoc_reorder, \
-    _strip_identities \
+    _strip_identities, \
+    _simplify_bitops, \
+    _strip_identities
     )
 
   return exp.walk(_strip_identities)

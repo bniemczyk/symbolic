@@ -89,5 +89,10 @@ class TestCoreClasses(unittest.TestCase):
     b = self.x(4, self.y + 4)
     self.assertEqual(hash(a), hash(b))
 
+  def test_simplify_bitops(self):
+    self.assertEqual(self.x ^ self.x, 0)
+    self.assertEqual(self.x & self.x, self.x)
+    self.assertEqual(self.x | self.x, self.x)
+
 if __name__ == '__main__':
   unittest.main()
