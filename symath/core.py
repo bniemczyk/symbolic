@@ -10,6 +10,16 @@ import random
 import string
 from memoize import Memoize
 
+def collect(exp, fn):
+  rv = set()
+  
+  def _collect(exp):
+    if fn(exp):
+      rv.add(exp)
+    return exp
+
+  exp.walk(collect)
+  return rv
 
 class _Symbolic(tuple):
 
@@ -79,6 +89,19 @@ class _Symbolic(tuple):
 
   def __len__(self):
     return 1
+
+  # comparison operations notice we don't override __eq__
+  def __gt__(self, obj):
+    return Fn.GreaterThan(self, obj)
+
+  def __ge__(self, obj):
+    return Fn.GreaterThanEq(self, obj)
+
+  def __lt__(self, obj):
+    return Fn.LessThan(self, obj)
+
+  def __le__(self, obj):
+    return Fn.LessThanEq(self, obj)
 
   # arithmetic overrides
   def __mul__(self, other):
@@ -210,6 +233,27 @@ class Number(_KnownValue):
   def __repr__(self):
     return str(self)
 
+
+class WildResults(object):
+
+  def __init__(self):
+    self._hash = {}
+
+  def clear(self):
+    self._hash.clear()
+
+  def __setitem__(self, idx, val):
+    self._hash.__setitem__(idx, val)
+
+  def __contains__(self, idx):
+    return idx in self._hash
+
+  def __getitem__(self, idx):
+    return self._hash[idx]
+
+  def __getattr__(self, idx):
+    return self[idx]
+
 class Wild(_Symbolic):
   '''
   wilds will be equal to anything, and are used for pattern matching
@@ -252,6 +296,9 @@ class Symbol(_Symbolic):
     self = Wild.__new__(typ, name)
     self.name = name
     self.kargs = kargs
+    self.is_integer = False # set to true to force domain to integers
+    self.is_bitvector = 0 # set to the size of the bitvector if it is a bitvector
+    self.is_bool = False # set to true if the symbol represents a boolean value
     return self
 
   def __eq__(self, other):

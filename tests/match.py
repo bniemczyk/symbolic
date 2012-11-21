@@ -9,10 +9,11 @@ class TestCoreClasses(unittest.TestCase):
     self.head = symath.symbols('head')
 
   def test_match(self):
-    m = {}
+    m = symath.WildResults()
     self.assertTrue(self.head(self.x, 3).match(self.w(self.x, self.v), m))
     self.assertEqual(m['w'], self.head)
     self.assertEqual(m['v'], 3)
+    self.assertEqual(m.v, 3)
 
     self.assertFalse(self.head(self.x, self.y).match(self.head(self.v, self.v)))
 
