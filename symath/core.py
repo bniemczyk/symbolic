@@ -210,6 +210,27 @@ class Number(_KnownValue):
   def __repr__(self):
     return str(self)
 
+
+class WildResults(object):
+
+  def __init__(self):
+    self._hash = {}
+
+  def clear(self):
+    self._hash.clear()
+
+  def __setitem__(self, idx, val):
+    self._hash.__setitem__(idx, val)
+
+  def __contains__(self, idx):
+    return idx in self._hash
+
+  def __getitem__(self, idx):
+    return self._hash[idx]
+
+  def __getattr__(self, idx):
+    return self[idx]
+
 class Wild(_Symbolic):
   '''
   wilds will be equal to anything, and are used for pattern matching

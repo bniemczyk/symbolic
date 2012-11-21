@@ -1,4 +1,4 @@
 import simplify
-from core import Boolean,Number,Symbol,Wild,symbols,wilds,symbolic,wild
+from core import Boolean,Number,Symbol,Wild,symbols,wilds,symbolic,wild,WildResults
 
 import match
