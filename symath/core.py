@@ -6,10 +6,16 @@ import traceback
 import types
 import copy
 import operator
+import random
+import string
 from memoize import Memoize
 
 
 class _Symbolic(tuple):
+
+  def match(self, other, valuestore=None):
+    import match
+    return match.match(self, other, valuestore)
 
   def walk(self, *fns):
     if len(fns) > 1:
@@ -206,18 +212,46 @@ class Number(_KnownValue):
 
 class Wild(_Symbolic):
   '''
-  wilds will not be equal even if they have the same name
-  but the same *instance* will be equal to itself
-
-  the main part of this is for substituting patterns -
-   this is not implemented yet
+  wilds will be equal to anything, and are used for pattern matching
   '''
 
   def __new__(typ, name, **kargs):
     self = _Symbolic.__new__(typ)
     self.name = name
     self.kargs = kargs
-    self.iswild = True
+    return self
+
+  def __eq__(self, other):
+    return other.name == self.name if type(other) == type(self) else False
+
+  def __str__(self):
+    return self.name
+
+  def __repr__(self):
+    return str(self)
+
+  def __call__(self, *args):
+    return Fn(self, *args)
+
+  def _dump(self):
+    return {
+        'type': type(self),
+        'name': self.name,
+        'kargs': self.kargs,
+        'id': id(self)
+        }
+
+class Symbol(_Symbolic):
+  '''
+  symbols with the same name and kargs will be equal
+  (and in fact are guaranteed to be the same instance)
+  '''
+
+  @Memoize
+  def __new__(typ, name, **kargs):
+    self = Wild.__new__(typ, name)
+    self.name = name
+    self.kargs = kargs
     return self
 
   def __eq__(self, other):
@@ -237,23 +271,9 @@ class Wild(_Symbolic):
         'type': type(self),
         'name': self.name,
         'kargs': self.kargs,
-        'iswild': self.iswild,
         'id': id(self)
         }
 
-class Symbol(Wild):
-  '''
-  symbols with the same name will be equal
-  (and in fact are wilds guaranteed to be the same instance)
-  '''
-
-  @Memoize
-  def __new__(typ, name, **kargs):
-    self = Wild.__new__(typ, name)
-    self.name = name
-    self.kargs = kargs
-    self.iswild = False
-    return self
 
 class Fn(_Symbolic):
 
@@ -439,8 +459,7 @@ def symbols(symstr, **kargs):
 
 def wilds(symstr, **kargs):
   '''
-  takes a string of variable names seperated by whitespace
-  returns a tuple of wilds
+  wilds should match anything
   '''
   syms = symstr.split(' ')
   if len(syms) == 1:
@@ -451,6 +470,11 @@ def wilds(symstr, **kargs):
     rv.append(Wild(i, **kargs))
 
   return tuple(rv)
+
+def wild(name=None, **kargs):
+  if name == None:
+    name = ''.join(random.choice(string.ascii_lowercase) for x in range(12))
+  return Wild(name, **kargs)
 
 def symbolic(obj, **kargs): 
   '''

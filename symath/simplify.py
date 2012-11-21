@@ -5,6 +5,8 @@ import core
 import copy
 import operator
 
+from core import wild
+
 def _order(a,b):
   '''
   used internally to put shit in canonical order
@@ -32,7 +34,7 @@ def _assoc_reorder(exp):
   # canonicalize the arguments first
   args = list(map(lambda x: _assoc_reorder(x), exp.args))
   if tuple(args) != tuple(exp.args):
-    exp = Fn(exp.fn, *args)
+    exp = core.Fn(exp.fn, *args)
 
   # if it's associative and one of the arguments is another instance of the
   # same function, canonicalize the order
@@ -47,20 +49,26 @@ def _assoc_reorder(exp):
   return exp
 
 def _remove_subtractions(exp):
-  if exp[0].name == '-' and len(exp) == 3:
-    return exp[1] + (-exp[2])
-  return exp
+  a,b = core.wilds('a b')
+  vals = {}
+  if exp.match(stdops.Sub(a,b), vals):
+    return vals['a'] + (-vals['b'])
+  else:
+    return exp
 
 def _strip_identities_pass(exp):
-  if len(exp) == 3:
+  a,b,c = core.wilds('a b c')
+  vals = {}
+
+  if exp.match(a(b, c)):
     kargs = exp[0].kargs
     lidentity = kargs['lidentity'] if 'lidentity' in kargs else kargs['identity'] if 'identity' in kargs else None
     ridentity = kargs['ridentity'] if 'ridentity' in kargs else kargs['identity'] if 'identity' in kargs else None
-
-    if lidentity != None and exp[1] == lidentity:
-      return exp[2].walk(_strip_identities)
-    if ridentity != None and exp[2] == ridentity:
-      return exp[1].walk(_strip_identities)
+    
+    if lidentity != None and exp.match(a(lidentity, b), vals):
+      return vals['b'].walk(_strip_identities)
+    elif ridentity != None and exp.match(a(b, ridentity), vals):
+      return vals['b'].walk(_strip_identities)
 
   return exp
 
@@ -81,81 +89,75 @@ def _zero_terms(exp):
 
 def _distribute(op1, op2):
   def _(exp):
-    rv = exp
-    if len(rv) == 3 and rv[0] == op1:
-      if rv[1][0] == op2 and len(rv[1]) == 3:
-        rv = op2(op1(rv[1][1], rv[2]), op1(rv[1][2], rv[2]))
-    if len(rv) == 3 and rv[0] == op1:
-      if rv[2][0] == op2 and len(rv[2]) == 3:
-        rv = op2(op1(rv[2][1], rv[1]), op1(rv[2][2], rv[1]))
+    a,b,c = core.wilds('a b c')
+    vals = {}
 
-    return rv
+    if exp.match(op1(op2(a, b), c), vals):
+      return op2(op1(vals['c'], vals['a']), op1(vals['c'], vals['b']))
+    elif exp.match(op1(a, op2(b, c)), vals):
+      return op2(op1(vals['a'], vals['b']), op1(vals['a'], vals['c']))
+    else:
+      return exp
+
   return _
 
 def _simplify_known_values(exp):
-  if len(exp) > 1 and 'numeric' in exp[0].kargs:
-    args = []
-    for i in range(1, len(exp)):
-      if not isinstance(exp[i], core._KnownValue):
-        return exp
-      if 'cast' in exp[0].kargs:
-        args.append(exp[0].kargs['cast'](exp[i].value()))
-      else:
-        args.append(exp[i].value())
-
-    nfn = getattr(operator, exp[0].kargs['numeric'])
-    return core.symbolic(nfn(*args))
+  a,b,c = core.wilds('a b c')
+  vals = {}
+  if exp.match(a(b,c), vals) \
+      and 'numeric' in vals['a'].kargs \
+      and isinstance(vals['b'], core._KnownValue) \
+      and isinstance(vals['c'], core._KnownValue):
+    cast = vals['a'].kargs['cast'] if 'cast' in vals['a'].kargs else (lambda x: x)
+    nfn = getattr(operator, vals['a'].kargs['numeric'])
+    return core.symbolic(nfn(cast(vals['b'].value()), cast(vals['c'].value())))
   else:
     return exp
 
 def _get_factors(exp):
   rv = {}
-  if exp[0] == stdops.Mul and len(exp) == 3:
-    tmp = _get_factors(exp[1])
+  a,b = core.wilds('a b')
+  vals = {}
+
+  if exp.match(a * b, vals):
+    tmp = _get_factors(vals['a'])
     for i in tmp:
       if i in rv:
         rv[i] += tmp[i] 
       else:
         rv[i] = tmp[i]
-    tmp = _get_factors(exp[2])
+    tmp = _get_factors(vals['b'])
     for i in tmp:
       if i in rv:
         rv[i] += tmp[i] 
       else:
         rv[i] = tmp[i]
-  elif exp[0] == stdops.Pow and len(exp) == 3:
-    rv = _get_factors(exp[1])
+  elif exp.match(a ** b, vals):
+    rv = _get_factors(vals['a'])
     for k in rv:
-      rv[k] = rv[k] * exp[2]
+      rv[k] = rv[k] * vals['b']
   else:
     rv[exp] = 1
 
   return rv
 
 def _fold_additions(exp):
-  if exp[0] == stdops.Add and len(exp) == 3:
-    if exp[1] == exp[2]:
-      exp = exp[1] * 2
+  a,b,c = core.wilds('a b c')
+  vals = {}
 
-    if exp[1][0] == stdops.Mul and len(exp[1]) == 3:
-      if exp[1][1] == exp[2]:
-        exp = (exp[1][2] + 1) * exp[2]
-      if exp[1][2] == exp[2]:
-        exp = (exp[1][1] + 1) * exp[2]
+  if exp.match(a + a, vals):
+    return vals['a'] * 2
 
-    if exp[2][0] == stdops.Mul and len(exp[2]) == 3:
-      try:
-        if exp[2][1] == exp[1]:
-          exp = (exp[2][2] + 1) * exp[1]
-        elif exp[2][2] == exp[1]:
-          exp = (exp[2][1] + 1) * exp[1]
-      except:
-        print 'FOLD ADDITIONS: wtf.. %s [%d] %s [%d]' % (exp[1], len(exp[1]), exp[2], len(exp[2]))
+  elif exp.match(a + (a * b), vals) or exp.match(a + (b * a), vals):
+    return (vals['b'] + 1) * vals['a']
 
-  return exp
+  else:
+    return exp
 
 def _convert_to_pow(exp):
-  if len(exp) != 3:
+  a,b,c = core.wilds('a b c')
+
+  if not exp.match(a(b,c)):
     return exp
 
   fs = _get_factors(exp)
@@ -230,6 +232,7 @@ def simplify(exp):
     _in_simplify = True
     sexp = _simplify_pass(exp)
     while sexp != exp:
+      #print '%s => %s' % (exp, sexp)
       exp = sexp
       sexp = _simplify_pass(exp)
   
