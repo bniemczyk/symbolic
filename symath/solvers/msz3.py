@@ -73,9 +73,9 @@ class ConstraintSet(set):
     solver = z3.Solver()
     for i in self:
       if \
-          i.match(symath.stdops.LogicalAnd(a, b) or \
-          i.match(symath.stdops.LogicalOr(a, b) or \
-          i.match(symath.stdops.LogcalXor(a, b) or \
+          i.match(symath.stdops.LogicalAnd(a, b)) or \
+          i.match(symath.stdops.LogicalOr(a, b)) or \
+          i.match(symath.stdops.LogicalXor(a, b)) or \
           i.match(symath.stdops.Equal(a, b)) or \
           i.match(a < b) or \
           i.match(a > b) or \
