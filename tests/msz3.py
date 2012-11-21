@@ -16,6 +16,16 @@ class TestZ3(unittest.TestCase):
     self.assertNotEqual(rv, None)
     self.assertEqual(rv.x, 2)
 
+  def test_more_complicated_solver(self):
+    x,y = symath.symbols('x y')
+    cs = solvers.z3.ConstraintSet()
+    cs.add(x < 0)
+    cs.add(x ** 3 < y ** 2)
+    cs.add(y ** 2 < 9)
+    cs.add(y > 0)
+    cs.add(x < y)
+    r = cs.solve()
+    self.assertNotEqual(r, None)
 
 if __name__ == '__main__':
   unittest.main()

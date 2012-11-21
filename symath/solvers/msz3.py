@@ -32,6 +32,12 @@ def _convert(exp):
     return _convert(vals.a) | _convert(vals.b)
   elif exp.match(a ** b, vals):
     return _convert(vals.a) ** _convert(vals.b)
+  elif exp.match(symath.stdops.LogicalAnd(a, b), vals):
+    return z3.And(_convert(vals.a), _convert(vals.b))
+  elif exp.match(symath.stdops.LogicalOr(a, b), vals):
+    return z3.Or(_convert(vals.a), _convert(vals.b))
+  elif exp.match(symath.stdops.LogicalXor(a, b), vals):
+    return z3.Or(z3.And(_convert(vals.a), z3.Not(_convert(vals.b))), z3.And(_convert(vals.b), z3.Not(_convert(vals.a))))
   elif isinstance(exp, symath.Symbol) and exp.is_integer:
     return z3.Int(exp.name)
   elif isinstance(exp, symath.Symbol) and exp.is_bool:
@@ -67,8 +73,12 @@ class ConstraintSet(set):
     solver = z3.Solver()
     for i in self:
       if \
+          i.match(symath.stdops.LogicalAnd(a, b) or \
+          i.match(symath.stdops.LogicalOr(a, b) or \
+          i.match(symath.stdops.LogcalXor(a, b) or \
           i.match(symath.stdops.Equal(a, b)) or \
           i.match(a < b) or \
+          i.match(a > b) or \
           i.match(a <= b) or \
           i.match(a >= b) or \
           i.match(a <= b):
