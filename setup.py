@@ -9,7 +9,7 @@ setup( \
   author='Brandon Niemczyk', \
   author_email='brandon.niemczyk@gmail.com', \
   url='http://github.com/bniemczyk/symbolic', \
-  packages=['symath'], \
+  packages=['symath', 'symath.solvers'], \
   test_suite='tests', \
   license='BSD', \
   classifiers = [ \

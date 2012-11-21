@@ -27,6 +27,9 @@ class _Symbolic(tuple):
     import match
     return match.match(self, other, valuestore)
 
+  def __hash__(self):
+    return hash(self.name)
+
   def walk(self, *fns):
     if len(fns) > 1:
       def _(exp):
@@ -77,9 +80,6 @@ class _Symbolic(tuple):
 
   def __ne__(self, other):
     return not self.__eq__(other)
-
-  def __hash__(self):
-    return id(self)
 
   def __getitem__(self, num):
     if num == 0:

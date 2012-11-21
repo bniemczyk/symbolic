@@ -84,5 +84,10 @@ class TestCoreClasses(unittest.TestCase):
     self.assertNotEqual(symath.wild('a'), symath.wild('b'))
     self.assertNotEqual(symath.wild(), symath.wild())
 
+  def test_hash(self):
+    a = self.x(4, self.y + 4)
+    b = self.x(4, self.y + 4)
+    self.assertEqual(hash(a), hash(b))
+
 if __name__ == '__main__':
   unittest.main()
