@@ -37,3 +37,6 @@ nosetests.xml
 # ctags/cscope
 tags
 cscope.out
+
+# vim swap files
+*.swp
