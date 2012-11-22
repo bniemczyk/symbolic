@@ -2,6 +2,10 @@
 
 from setuptools import setup
 
+_depends = '''
+numpy
+'''
+
 setup( \
   name='symath', \
   version='git', \
@@ -9,9 +13,10 @@ setup( \
   author='Brandon Niemczyk', \
   author_email='brandon.niemczyk@gmail.com', \
   url='http://github.com/bniemczyk/symbolic', \
-  packages=['symath', 'symath.solvers'], \
+  packages=['symath', 'symath.solvers', 'symath.graph'], \
   test_suite='tests', \
   license='BSD', \
+  install_requires=_depends, \
   classifiers = [ \
     'Development Status :: 3 - Alpha', \
     'Intended Audience :: Developers', \
