@@ -4,7 +4,10 @@ import symath
 import symath.solvers as solvers
 import unittest
 
-class TestZ3(unittest.TestCase):
+# only test if z3 is available
+cls = unittest.TestCase if hasattr(solvers, 'z3') else object
+
+class TestZ3(cls):
 
   def setUp(self):
     self.x, self.y = symath.symbols('x y')
