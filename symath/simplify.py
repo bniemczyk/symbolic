@@ -182,6 +182,8 @@ def _simplify_bitops(exp):
     return vals.a
   elif exp.match(a & a, vals):
     return vals.a
+  elif exp.match((a << b) >> b, vals) or exp.match((a >> b) << b, vals):
+    return vals.a
   else:
     return exp
 

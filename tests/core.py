@@ -93,6 +93,7 @@ class TestCoreClasses(unittest.TestCase):
     self.assertEqual(self.x ^ self.x, 0)
     self.assertEqual(self.x & self.x, self.x)
     self.assertEqual(self.x | self.x, self.x)
+    self.assertEqual((self.x << 8) >> 8, self.x)
 
 if __name__ == '__main__':
   unittest.main()
