@@ -40,3 +40,4 @@ cscope.out
 
 # vim swap files
 *.swp
+**/*.swp
