@@ -227,32 +227,15 @@ def _simplify_pass(exp):
 
   return exp.walk(_strip_identities)
 
-# FIXME/TODO:
-#  using a lock for this is super retarded, but it's a quick easy hack
-#  the problem is that we don't want expressions being created by simplify to
-#  trigger a simplification themselves
-_simplify_lock = threading.RLock()
-_in_simplify = False
-
 def simplify(exp):
   '''
   attempts to simplify an expression
   is knowledgeable of the operations defined in symath.stdops
   '''
-  global _in_simplify
-  global _simplify_lock
-
-  with _simplify_lock:
-    if _in_simplify:
-      return exp
-  
-    _in_simplify = True
+  sexp = _simplify_pass(exp)
+  while sexp != exp:
+    #print '%s => %s' % (exp, sexp)
+    exp = sexp
     sexp = _simplify_pass(exp)
-    while sexp != exp:
-      #print '%s => %s' % (exp, sexp)
-      exp = sexp
-      sexp = _simplify_pass(exp)
-  
-    _in_simplify = False
-    return exp
 
+  return exp
