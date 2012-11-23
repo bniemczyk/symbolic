@@ -8,11 +8,11 @@ class TestCoreClasses(unittest.TestCase):
     self.x, self.y = symath.symbols('x y')
 
   def test_identity(self):
-    self.assertEqual(self.x * 1, self.x)
-    self.assertEqual(self.x + 0, self.x)
+    self.assertEqual((self.x * 1).simplify(), (self.x).simplify())
+    self.assertEqual((self.x + 0).simplify(), (self.x).simplify())
 
   def test_zero(self):
-    self.assertEqual(self.x * 0, 0)
+    self.assertEqual((self.x * 0).simplify(), 0)
 
   def test_index(self):
     self.assertEqual(len(self.x), 1)
@@ -25,7 +25,7 @@ class TestCoreClasses(unittest.TestCase):
   def test_substitute(self):
     exp = self.x + self.y * 3
     exp = exp.substitute({self.x: 3, self.y: 4})
-    self.assertEqual(exp, 15)
+    self.assertEqual(exp.simplify(), 15)
 
   def test_symath_imports_symbolic(self):
     sn = symath.symbolic(3)
@@ -40,44 +40,44 @@ class TestCoreClasses(unittest.TestCase):
     self.assertEqual(str((self.x + self.y)(self.x + self.y)), '(x + y)((x + y))')
 
   def test_pow(self):
-    self.assertEqual(self.x * self.x, self.x ** 2)
-    self.assertEqual(self.x ** 2 * self.x, self.x ** 3)
-    self.assertEqual(self.x * self.x * self.x, self.x ** 3)
-    self.assertEqual((2 * self.x) * self.x, self.x ** 2 * 2)
+    self.assertEqual((self.x * self.x).simplify(), (self.x ** 2).simplify())
+    self.assertEqual((self.x ** 2 * self.x).simplify(), (self.x ** 3).simplify())
+    self.assertEqual((self.x * self.x * self.x).simplify(), (self.x ** 3).simplify())
+    self.assertEqual(((2 * self.x) * self.x).simplify(), (self.x ** 2 * 2).simplify())
 
   def test_fold_additions(self):
-    self.assertEqual(self.x + self.x, 2 * self.x)
-    self.assertEqual(self.x + self.y * self.x, (self.y + 1) * self.x)
+    self.assertEqual((self.x + self.x).simplify(), (2 * self.x).simplify())
+    self.assertEqual((self.x + self.y * self.x).simplify(), ((self.y + 1) * self.x).simplify())
 
   def test_equality(self):
     self.assertNotEqual(self.x(3), self.x(4))
-    self.assertEqual(self.x, self.x)
-    self.assertEqual(self.x(3), self.x(3))
-    self.assertEqual(self.x(self.y), self.x(self.y))
+    self.assertEqual((self.x).simplify(), (self.x).simplify())
+    self.assertEqual((self.x(3)).simplify(), (self.x(3)).simplify())
+    self.assertEqual((self.x(self.y)).simplify(), (self.x(self.y)).simplify())
 
   def test_subtractions(self):
-    self.assertEqual(self.x - self.y, self.x + (-self.y))
+    self.assertEqual((self.x - self.y).simplify(), (self.x + (-self.y)).simplify())
 
   def test_addition_reorder(self):
-    self.assertEqual(self.x + self.y * self.y + self.x, self.x + self.x + self.y * self.y)
+    self.assertEqual((self.x + self.y * self.y + self.x).simplify(), (self.x + self.x + self.y * self.y).simplify())
 
   def test_numeric_ops(self):
-    self.assertEqual((self.x + self.y).substitute({self.x: 3, self.y: 4}), 7)
+    self.assertEqual((self.x + self.y).substitute({self.x: 3, self.y: 4}).simplify(), 7)
 
   def test_failure_case_1(self):
-    self.assertEqual(self.y + self.x * self.y + self.x, self.x + self.y + self.x * self.y)
+    self.assertEqual((self.y + self.x * self.y + self.x).simplify(), (self.x + self.y + self.x * self.y).simplify())
 
   def test_logical_operands(self):
     t = symath.symbolic(True)
     f = symath.symbolic(False)
 
-    self.assertEqual(symath.stdops.LogicalAnd(t, f), f)
-    self.assertEqual(symath.stdops.LogicalAnd(t, f), False)
-    self.assertEqual(symath.stdops.LogicalOr(t, f), t)
-    self.assertEqual(symath.stdops.LogicalOr(t, f), True)
-    self.assertEqual(symath.stdops.LogicalXor(t, t), False)
-    self.assertEqual(symath.stdops.LogicalXor(f, t), True)
-    self.assertEqual(symath.stdops.LogicalXor(f, f), False)
+    self.assertEqual(symath.stdops.LogicalAnd(t, f).simplify(), f)
+    self.assertEqual(symath.stdops.LogicalAnd(t, f).simplify(), False)
+    self.assertEqual(symath.stdops.LogicalOr(t, f).simplify(), t)
+    self.assertEqual(symath.stdops.LogicalOr(t, f).simplify(), True)
+    self.assertEqual(symath.stdops.LogicalXor(t, t).simplify(), False)
+    self.assertEqual(symath.stdops.LogicalXor(f, t).simplify(), True)
+    self.assertEqual(symath.stdops.LogicalXor(f, f).simplify(), False)
 
   def test_wilds_equality(self):
     self.assertEqual(symath.wild('a'), symath.wild('a'))
@@ -90,10 +90,10 @@ class TestCoreClasses(unittest.TestCase):
     self.assertEqual(hash(a), hash(b))
 
   def test_simplify_bitops(self):
-    self.assertEqual(self.x ^ self.x, 0)
-    self.assertEqual(self.x & self.x, self.x)
-    self.assertEqual(self.x | self.x, self.x)
-    self.assertEqual((self.x << 8) >> 8, self.x)
+    self.assertEqual((self.x ^ self.x).simplify(), 0)
+    self.assertEqual((self.x & self.x).simplify(), (self.x).simplify())
+    self.assertEqual((self.x | self.x).simplify(), (self.x).simplify())
+    self.assertEqual(((self.x << 8) >> 8).simplify(), (self.x).simplify())
 
 if __name__ == '__main__':
   unittest.main()

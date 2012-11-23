@@ -30,6 +30,10 @@ class _Symbolic(tuple):
   def __hash__(self):
     return hash(self.name)
 
+  def simplify(self):
+    import simplify
+    return simplify.simplify(self)
+
   def walk(self, *fns):
     if len(fns) > 1:
       def _(exp):
@@ -348,10 +352,10 @@ class Fn(_Symbolic):
     self.fn = fn
     self.args = args
 
-    import simplify
-    rv = simplify.simplify(self)
+    #import simplify
+    #rv = simplify.simplify(self)
 
-    return rv
+    return self
 
   def __eq__(self, other):
     if not type(self) == type(other):
