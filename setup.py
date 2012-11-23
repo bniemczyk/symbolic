@@ -8,7 +8,7 @@ numpy
 
 setup( \
   name='symath', \
-  version='0.1.16', \
+  version='0.1.17', \
   description='symbolic mathematics for python', \
   author='Brandon Niemczyk', \
   author_email='brandon.niemczyk@gmail.com', \
