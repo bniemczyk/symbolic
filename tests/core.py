@@ -71,6 +71,9 @@ class TestCoreClasses(unittest.TestCase):
   def test_divide_by_factor(self):
     self.assertEqual(((self.x * self.y) / self.y).simplify(), self.x)
 
+  def test_divide_by_factor(self):
+    self.assertEqual(((self.x * self.y) / self.y).simplify(), self.x)
+
   def test_failure_case_1(self):
     self.assertEqual((self.y + self.x * self.y + self.x).simplify(), (self.x + self.y + self.x * self.y).simplify())
 

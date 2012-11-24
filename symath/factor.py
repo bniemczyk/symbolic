@@ -31,7 +31,7 @@ def is_factor(x, y):
     return False
 
 @memoize.Memoize
-def simple_div(y, x):
+def get_coefficient(y, x):
   '''
   divides y by x and returns
   - only works if x is a factor of y
@@ -47,9 +47,9 @@ def simple_div(y, x):
 
   if y.match(a * b, val):
     if is_factor(x, val.a):
-      return simple_div(val.a, x) * val.b
+      return get_coefficient(val.a, x) * val.b
     else:
-      return simple_div(val.b, x) * val.a
+      return get_coefficient(val.b, x) * val.a
 
   elif y.match(c(a, b), val):
-    return val.c(simple_div(val.a, x), simple_div(val.b, x))
+    return val.c(get_coefficient(val.a, x), get_coefficient(val.b, x))
