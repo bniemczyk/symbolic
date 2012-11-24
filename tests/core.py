@@ -5,7 +5,7 @@ import symath
 
 class TestCoreClasses(unittest.TestCase):
   def setUp(self):
-    self.x, self.y = symath.symbols('x y')
+    self.x, self.y, self.z = symath.symbols('x y z')
 
   def test_identity(self):
     self.assertEqual((self.x * 1).simplify(), (self.x).simplify())
@@ -63,6 +63,16 @@ class TestCoreClasses(unittest.TestCase):
 
   def test_numeric_ops(self):
     self.assertEqual((self.x + self.y).substitute({self.x: 3, self.y: 4}).simplify(), 7)
+
+  def test_mul_div(self):
+    self.assertEqual((self.x * (self.z / self.y)).simplify(), ((self.x * self.z) / self.y).simplify())
+    self.assertEqual((((3 + self.x) / (2 + self.x)) * (2 + self.x)).simplify(), (3 + self.x).simplify())
+
+  def test_divide_by_factor(self):
+    self.assertEqual(((self.x * self.y) / self.y).simplify(), self.x)
+
+  def test_divide_by_factor(self):
+    self.assertEqual(((self.x * self.y) / self.y).simplify(), self.x)
 
   def test_failure_case_1(self):
     self.assertEqual((self.y + self.x * self.y + self.x).simplify(), (self.x + self.y + self.x * self.y).simplify())
