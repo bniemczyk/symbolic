@@ -4,6 +4,7 @@ import stdops as stdops
 import core
 import copy
 import operator
+import factor
 
 from core import wild
 
@@ -100,6 +101,21 @@ def _distribute(op1, op2):
       return exp
 
   return _
+
+def _simplify_mul_div(exp):
+  a,b,c = core.wilds('a b c')
+  vals = core.WildResults()
+
+  if exp.match(a * (b / c), vals) or exp.match((b / c) * a, vals):
+    return (vals.a * vals.b) / vals.c
+
+  elif exp.match(a / b, vals) and isinstance(vals.b, core.Number):
+    return vals.a * (1.0 / vals.b).simplify()
+
+  elif exp.match(a / b, vals) and factor.is_factor(vals.b, vals.a):
+    return factor.simple_div(vals.a, vals.b)
+
+  return exp
 
 def _simplify_known_values(exp):
   a,b,c = core.wilds('a b c')
@@ -222,7 +238,9 @@ def _simplify_pass(exp):
     _assoc_reorder, \
     _strip_identities, \
     _simplify_bitops, \
-    _strip_identities
+    _strip_identities, \
+    _simplify_mul_div, \
+    _strip_identities \
     )
 
   return exp.walk(_strip_identities)
