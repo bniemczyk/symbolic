@@ -219,8 +219,10 @@ class Number(_KnownValue):
     return self.n
 
   def __eq__(self, other):
-    if isinstance(other, _Symbolic):
-      return super(Number, self).__eq__(other)
+    if isinstance(other, Number):
+      return self.n == other.n
+    elif isinstance(other, _Symbolic):
+      return other.__eq__(self)
     else:
       return self.n == other
 
