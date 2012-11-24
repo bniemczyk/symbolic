@@ -66,6 +66,7 @@ class TestCoreClasses(unittest.TestCase):
 
   def test_mul_div(self):
     self.assertEqual((self.x * (self.z / self.y)).simplify(), ((self.x * self.z) / self.y).simplify())
+    self.assertEqual((((3 + self.x) / (2 + self.x)) * (2 + self.x)).simplify(), (3 + self.x).simplify())
 
   def test_divide_by_factor(self):
     self.assertEqual(((self.x * self.y) / self.y).simplify(), self.x)

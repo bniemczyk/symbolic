@@ -106,6 +106,9 @@ def _simplify_mul_div(exp):
   a,b,c = core.wilds('a b c')
   vals = core.WildResults()
 
+  if exp.match(c * (b / c), vals) or exp.match((b / c) * c, vals):
+    return vals.b
+
   if exp.match(a * (b / c), vals) or exp.match((b / c) * a, vals):
     return (vals.a * vals.b) / vals.c
 
@@ -214,6 +217,8 @@ def _commutative_reorder(exp):
 def _simplify_pass(exp):
   exp = exp.walk(\
     _commutative_reorder, \
+    _strip_identities, \
+    _simplify_mul_div, \
     _strip_identities, \
     _simplify_known_values, \
     _strip_identities, \
