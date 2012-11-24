@@ -80,7 +80,8 @@ class _Symbolic(tuple):
     return self
 
   def __eq__(self, other):
-    return type(self) == type(other) and self.name == other.name
+    #return type(self) == type(other) and self.name == other.name
+    return id(self) == id(other)
 
   def __ne__(self, other):
     return not self.__eq__(other)
@@ -206,6 +207,7 @@ class Number(_KnownValue):
   IFORMAT = str
   FFORMAT = str
 
+  @Memoize
   def __new__(typ, n):
     n = float(n)
     self = _KnownValue.__new__(typ)
@@ -263,14 +265,12 @@ class Wild(_Symbolic):
   wilds will be equal to anything, and are used for pattern matching
   '''
 
+  @Memoize
   def __new__(typ, name, **kargs):
     self = _Symbolic.__new__(typ)
     self.name = name
     self.kargs = kargs
     return self
-
-  def __eq__(self, other):
-    return other.name == self.name if type(other) == type(self) else False
 
   def __str__(self):
     return self.name
@@ -305,9 +305,6 @@ class Symbol(_Symbolic):
     self.is_bool = False # set to true if the symbol represents a boolean value
     return self
 
-  def __eq__(self, other):
-    return id(self) == id(other)
-
   def __str__(self):
     return self.name
 
@@ -328,6 +325,7 @@ class Symbol(_Symbolic):
 
 class Fn(_Symbolic):
 
+  @Memoize
   def __new__(typ, fn, *args):
     '''
     arguments: Function, *arguments, **kargs
@@ -356,19 +354,6 @@ class Fn(_Symbolic):
     #rv = simplify.simplify(self)
 
     return self
-
-  def __eq__(self, other):
-    if not type(self) == type(other):
-      return False
-
-    if len(self.args) != len(other.args):
-      return False
-
-    for i in range(len(self.args)):
-      if self.args[i] != other.args[i]:
-        return False
-
-    return self.fn == other.fn
 
   def _dump(self):
     return {
