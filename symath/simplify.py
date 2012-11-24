@@ -113,7 +113,7 @@ def _simplify_mul_div(exp):
     return (vals.a * vals.b) / vals.c
 
   elif exp.match(a / b, vals) and isinstance(vals.b, core.Number):
-    return vals.a * (1.0 / vals.b).simplify()
+    return vals.a * (1.0 / vals.b.value())
 
   elif exp.match(a / b, vals) and factor.is_factor(vals.b, vals.a):
     return factor.simple_div(vals.a, vals.b)
