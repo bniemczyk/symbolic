@@ -24,6 +24,17 @@ def collect(exp, fn):
 class _Symbolic(tuple):
 
   def match(self, other, valuestore=None):
+    '''
+    matches against a pattern, use wilds() to generate wilds
+  
+    Example:
+      a,b = wilds('a b')
+      val = WildsResults()
+      
+      if exp.match(a(b + 4), val):
+        print val.a
+        print val.b
+    '''
     import match
     return match.match(self, other, valuestore)
 

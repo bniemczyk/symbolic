@@ -29,8 +29,15 @@ def extract(a,b,rv=None):
 
 def match(a, b, valuestore=None):
   '''
-  match is like == except it enforces that if the same wild is used in multiple places
-  then the same value must be in each of those places
+  matches against a pattern, use wilds() to generate wilds
+
+  Example:
+    a,b = wilds('a b')
+    val = WildsResults()
+    
+    if exp.match(a(b + 4), val):
+      print val.a
+      print val.b
   '''
 
   if valuestore != None:
