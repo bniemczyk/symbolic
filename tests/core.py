@@ -110,6 +110,7 @@ class TestCoreClasses(unittest.TestCase):
     self.assertEqual(edit_distance(self.x(self.x, self.y, self.x), self.y(self.x, self.x, self.x)), 2)
     self.assertEqual(edit_distance(self.x(self.y, self.x), self.x(self.y, self.y, self.x)), 1)
     self.assertEqual(edit_distance(self.x(self.y, self.x), self.x(self.x)), 1)
+    self.assertEqual(edit_distance(self.x(self.y, self.y, self.x), self.x(self.x)), 2)
 
 if __name__ == '__main__':
   unittest.main()

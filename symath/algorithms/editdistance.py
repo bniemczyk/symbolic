@@ -16,7 +16,7 @@ def _recursive_len(exp):
       rv += _recursive_len(i)
     return rv
   else:
-    return 1
+    return len(exp)
 
 @symath.memoize.Memoize
 def _edit_distance(exp1, exp2):
@@ -30,12 +30,14 @@ def _edit_distance(exp1, exp2):
     return _recursive_len(exp1)
 
   cases = [
-    _edit_distance(exp1[1:], exp2), # insertion 
-    _edit_distance(exp1, exp2[1:]), # removal
+    _edit_distance(exp1[1:], exp2) + 1, # insertion 
+    _edit_distance(exp1, exp2[1:]) + 1, # removal
     _edit_distance(exp1[1:], exp2[1:]) + edit_distance(exp1[0], exp2[0]) # substitution or continuation
     ]
 
-  return min(cases)
+  rv = min(cases)
+  #print 'ED %s,%s => %d' % (exp1, exp2, rv)
+  return rv
 
 @symath.memoize.Memoize
 def edit_distance(exp1, exp2):
@@ -46,9 +48,10 @@ def edit_distance(exp1, exp2):
   this is primarily useful so that you can make 'fuzzy signatures' out of symbolic
   expressions
   '''
+  rv = 0
 
   if exp1.match(exp2) or exp2.match(exp1):
-    return 0
+    rv = 0
 
   elif isinstance(exp1, symath.core.Fn) and isinstance(exp2, symath.core.Fn):
     return edit_distance(exp1[0], exp2[0]) + _edit_distance(exp1.args, exp2.args)
@@ -60,4 +63,8 @@ def edit_distance(exp1, exp2):
     return edit_distance(exp2[0], exp1) + _edit_distance((), exp2.args)
 
   else:
-    return 1
+    rv = 1
+
+  #print 'ED: %s, %s => %d' % (exp1, exp2, rv)
+  return rv
+
