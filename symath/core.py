@@ -346,6 +346,9 @@ class Fn(_Symbolic):
       commutative (default False) - order of operands is unimportant
     '''
 
+    if None in args:
+      raise BaseException('NONE IN ARGS %s %s' % (fn, args))
+
     if not isinstance(fn, _Symbolic):
       fn = symbolic(fn)
       return Fn.__new__(typ, fn, *args)
