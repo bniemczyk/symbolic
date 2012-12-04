@@ -494,12 +494,16 @@ class Fn(_Symbolic):
   def __repr__(self):
     return str(self)
 
-def symbols(symstr, **kargs):
+def symbols(symstr=None, **kargs):
   '''
   takes a string of symbols seperated by whitespace
   returns a tuple of symbols
   '''
-  syms = symstr.split(' ')
+  if symstr == None:
+    syms = [''.join(random.choice(string.ascii_lowercase) for x in range(12))]
+  else:
+    syms = symstr.split(' ')
+
   if len(syms) == 1:
     return Symbol(syms[0], **kargs)
 
