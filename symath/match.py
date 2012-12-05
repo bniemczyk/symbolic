@@ -15,15 +15,19 @@ def extract(a,b,rv=None):
       return None
     rv[b.name] = a
     return rv
+
   elif len(a) != len(b):
     return None
+
   elif len(b) > 1:
     for i in range(len(b)):
       if extract(a[i], b[i], rv) == None:
         return None
     return rv
+
   elif a == b:
-    return rv
+    return a
+
   else:
     return None
 
@@ -49,6 +53,8 @@ def match(a, b, valuestore=None):
 
   if valuestore != None:
     for k in d:
+      if d[k] == core.wild(k):
+        continue
       valuestore[k] = d[k]
 
   return True

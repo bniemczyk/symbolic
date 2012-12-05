@@ -110,5 +110,32 @@ class TestCoreClasses(unittest.TestCase):
     self.assertTrue((self.y + a) in (self.x * (self.y + self.z)))
     self.assertFalse((self.y + self.x) in (self.x * (self.y + self.z)))
 
+  def test_wilds_dont_substitute(self):
+    '''
+    it is implicitly assumed that substitute is too "dumb" to account for wilds
+    in some places in the code base, this makes sure that doesnt change without
+    making sure the rest of the code base is updated
+    '''
+
+    a,b = symath.wilds('a b')
+    x,y = symath.symbols('x y')
+
+    subs = { x(a): x(x) }
+    self.assertEqual(x(y).substitute(subs), x(y))
+    self.assertEqual(x(a).substitute(subs), x(x)) # this one *should* substitute
+    self.assertEqual(x(b).substitute(subs), x(b))
+
+  def test_symbol_inequal_wild(self):
+    a = symath.wilds('a')
+    sa = symath.symbols('a')
+
+    self.assertNotEqual(sa, a)
+
+  def test_match_dont_extract_wilds_that_are_equal(self):
+    a,b = symath.wilds('a b')
+    vals = symath.WildResults()
+    a(b).match(a(b), vals)
+    self.assertEqual(len(vals), 0)
+
 if __name__ == '__main__':
   unittest.main()

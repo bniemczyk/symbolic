@@ -285,6 +285,18 @@ class WildResults(object):
   def __getattr__(self, idx):
     return self[idx]
 
+  def __iter__(self):
+    return self._hash.__iter__()
+
+  def __str__(self):
+    return str(self._hash)
+
+  def __repr__(self):
+    return str(self)
+
+  def __len__(self):
+    return len(self._hash)
+
 class Wild(_Symbolic):
   '''
   wilds will be equal to anything, and are used for pattern matching
