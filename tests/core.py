@@ -105,5 +105,10 @@ class TestCoreClasses(unittest.TestCase):
     self.assertEqual((self.x | self.x).simplify(), (self.x).simplify())
     self.assertEqual(((self.x << 8) >> 8).simplify(), (self.x).simplify())
 
+  def test_contains(self):
+    a = symath.wild('a')
+    self.assertTrue((self.y + a) in (self.x * (self.y + self.z)))
+    self.assertFalse((self.y + self.x) in (self.x * (self.y + self.z)))
+
 if __name__ == '__main__':
   unittest.main()

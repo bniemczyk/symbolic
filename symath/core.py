@@ -80,6 +80,18 @@ class _Symbolic(tuple):
         'id': id(self)
         }
 
+  def __contains__(self, exp):
+    rv = {}
+    rv['val'] = False
+
+    def _(_exp):
+      if _exp.match(exp):
+        rv['val'] = True
+      return _exp
+    self.walk(_)
+
+    return rv['val']
+
   def substitute(self, subs):
     '''
     takes a dictionary of substitutions
