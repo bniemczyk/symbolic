@@ -105,12 +105,5 @@ class TestCoreClasses(unittest.TestCase):
     self.assertEqual((self.x | self.x).simplify(), (self.x).simplify())
     self.assertEqual(((self.x << 8) >> 8).simplify(), (self.x).simplify())
 
-  def test_edit_distance(self):
-    from symath.algorithms.editdistance import edit_distance
-    self.assertEqual(edit_distance(self.x(self.x, self.y, self.x), self.y(self.x, self.x, self.x)), 2)
-    self.assertEqual(edit_distance(self.x(self.y, self.x), self.x(self.y, self.y, self.x)), 1)
-    self.assertEqual(edit_distance(self.x(self.y, self.x), self.x(self.x)), 1)
-    self.assertEqual(edit_distance(self.x(self.y, self.y, self.x), self.x(self.x)), 2)
-
 if __name__ == '__main__':
   unittest.main()
