@@ -13,6 +13,10 @@ class Memoize(object):
         self.results = results if results != None else {}
         self.noargs = object()
 
+    def clear_results(self):
+      self.noargs = object()
+      self.results = {}
+
     def __exit__(self,type,value,traceback):
         pass
 

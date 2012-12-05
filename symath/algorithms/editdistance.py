@@ -50,7 +50,7 @@ def _tuple_edit_distance(exp1, exp2, **subs):
 
   # remove
   d,ns = _tuple_edit_distance(exp1, exp2[1:], **subs)
-  if d + 1 < rv[0]:
+  if d+1 < rv[0]:
     rv = d+1, ns
 
   # substitution or continuation
@@ -93,6 +93,7 @@ def _edit_distance(exp1, exp2, **subs):
   else:
     return 1, subs
 
+@symath.memoize.Memoize
 def _prepare_exps(exp1, exp2):
   '''
   replace wilds with their equivelant symbols in exp2

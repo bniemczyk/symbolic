@@ -1,4 +1,9 @@
 import symath.core
+import pprint
+
+def pretty(exp):
+  p = pprint.PrettyPrinter(indent=2)
+  p.pprint(exp)
 
 def dict_reverse(d):
   rv = {}
