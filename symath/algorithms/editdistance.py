@@ -35,9 +35,7 @@ def _edit_distance(exp1, exp2):
     _edit_distance(exp1[1:], exp2[1:]) + edit_distance(exp1[0], exp2[0]) # substitution or continuation
     ]
 
-  rv = min(cases)
-  #print 'ED %s,%s => %d' % (exp1, exp2, rv)
-  return rv
+  return min(cases)
 
 @symath.memoize.Memoize
 def edit_distance(exp1, exp2):
@@ -48,10 +46,9 @@ def edit_distance(exp1, exp2):
   this is primarily useful so that you can make 'fuzzy signatures' out of symbolic
   expressions
   '''
-  rv = 0
 
   if exp1.match(exp2) or exp2.match(exp1):
-    rv = 0
+    return 0
 
   elif isinstance(exp1, symath.core.Fn) and isinstance(exp2, symath.core.Fn):
     return edit_distance(exp1[0], exp2[0]) + _edit_distance(exp1.args, exp2.args)
@@ -63,8 +60,4 @@ def edit_distance(exp1, exp2):
     return edit_distance(exp2[0], exp1) + _edit_distance((), exp2.args)
 
   else:
-    rv = 1
-
-  #print 'ED: %s, %s => %d' % (exp1, exp2, rv)
-  return rv
-
+    return 1
