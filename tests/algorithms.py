@@ -24,7 +24,11 @@ class TestAlgorithms(unittest.TestCase):
     self.assertEqual(edit_distance(y(x(a, b), x(b, a)), y(x(a, b), x(a, b))), 2)
     self.assertEqual(edit_distance(y(x(a, b), x(b, a)), x(x(a, b), x(a, b))), 3)
 
-  def test_print_edit_distance_metric(self):
+  def xtest_print_edit_distance_metric(self):
+    '''
+    skip this because
+    no longer does _tuple_edit_distance memoize
+    '''
     import symath.algorithms.editdistance as ed
     from numpy import *
     ed._tuple_edit_distance.clear_results()
