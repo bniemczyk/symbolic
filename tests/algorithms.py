@@ -24,6 +24,10 @@ class TestAlgorithms(unittest.TestCase):
     self.assertEqual(edit_distance(y(x(a, b), x(b, a)), y(x(a, b), x(a, b))), 2)
     self.assertEqual(edit_distance(y(x(a, b), x(b, a)), x(x(a, b), x(a, b))), 3)
 
+    exp1 = y(x, x, x, y, y, x, x, x, y)
+    exp2 = y(x, y, y, x, y, x, x, y)
+    self.assertEqual(edit_distance(exp1, exp2), 3)
+
   def xtest_print_edit_distance_metric(self):
     '''
     skip this because
@@ -38,7 +42,7 @@ class TestAlgorithms(unittest.TestCase):
     print ''
     print 'edit_distance(%s, %s) = %d' % (exp1, exp2, ed.edit_distance(exp1, exp2))
     rv = ed._tuple_edit_distance.results
-    #util.pretty(rv)
+    util.pretty(rv)
 
     m = zeros([len(exp1), len(exp2)], dtype=int)
     for i in range(len(exp1)):

@@ -103,6 +103,9 @@ def _tuple_edit_distance(t1, t2, k, **subs):
     return M[x,y], subs
 
   rv = _get_val(len(t1), len(t2), k, **subs)
+  #print '\nEDIT(%s, %s) = %d' % (t1,t2, rv[0])
+  #print M
+  #print 'skipped %d out of %d calculations' % (len(filter(lambda x: x == -1, M.flatten())), ((len(t1) + 1) * (len(t2) + 1)))
   return rv
 
 @symath.memoize.Memoize
@@ -168,10 +171,10 @@ def edit_distance(exp1, exp2, k=None):
   expressions
   '''
   if k == None:
-    k = min([_recursive_len(exp1), _recursive_len(exp2)])
+    k = max([_recursive_len(exp1), _recursive_len(exp2)])
 
   exp1,exp2 = _prepare_exps(exp1, exp2)
-  return _edit_distance(exp1, exp2, k)[0]
+  return min(_edit_distance(exp1, exp2, k)[0], k)
 
 def edit_substitutions(exp1, exp2):
   '''
