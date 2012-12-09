@@ -7,6 +7,7 @@ import symath.util as util
 class TestAlgorithms(unittest.TestCase):
 
   def setUp(self):
+    util.DEBUG = True
     pass
 
   def test_edit_distance(self):

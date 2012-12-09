@@ -103,9 +103,10 @@ def _tuple_edit_distance(t1, t2, k, **subs):
     return M[x,y], subs
 
   rv = _get_val(len(t1), len(t2), k, **subs)
-  #print '\nEDIT(%s, %s) = %d' % (t1,t2, rv[0])
-  #print M
-  #print 'skipped %d out of %d calculations' % (len(filter(lambda x: x == -1, M.flatten())), ((len(t1) + 1) * (len(t2) + 1)))
+  if util.DEBUG:
+    util.debug('\nEDIT(%s, %s) = %d' % (t1,t2, rv[0]))
+    util.debug(M)
+    util.debug('skipped %d out of %d calculations' % (len(filter(lambda x: x == -1, M.flatten())), ((len(t1) + 1) * (len(t2) + 1)) - len(t1) - len(t2) - 1))
   return rv
 
 @symath.memoize.Memoize
