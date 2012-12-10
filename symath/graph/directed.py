@@ -15,12 +15,11 @@ class DirectedGraph(object):
     def clear():
         self.nodes = {}
 
-    def copy():
+    def copy(self):
         return copy.deepcopy(self)
 
     def __init__(self):
         self.nodes = {}
-        self.exit_nodes = set()
         self.edges = {}
         self.metadata = {}
 
@@ -38,6 +37,10 @@ class DirectedGraph(object):
 
         if edgeValue != None:
             self.edges.setdefault((src,dst), set()).add(edgeValue)
+
+    def disconnect(self, src, dst):
+      self.nodes[src].outgoing.remove(dst)
+      self.nodes[dst].incoming.remove(src)
 
     def strip_edges_to(self, dst):
         n = self.nodes[dst]
@@ -136,9 +139,20 @@ class DirectedGraph(object):
             ec += len(self.nodes[n].outgoing)
         return ec
 
-    def cyclomatic_complexity(self):
-        e = self._edge_count()
-        return e - len(self.nodes) + (len(self.exit_nodes) * 2)
+    @property
+    def exit_nodes(self):
+      def _exit_nodes():
+        for i in self.nodes.values():
+          if len(i.outgoing) == 0:
+            yield i
+
+      return list(_exit_nodes())
+
+    @property
+    def start_node(self):
+      for i in self.nodes.values():
+        if len(i.incoming) == 0:
+          return i
 
     def visualize(self,layout='dot'):
         import pydot

@@ -9,6 +9,7 @@ import operator
 import random
 import string
 from memoize import Memoize
+import numpy
 
 def collect(exp, fn):
   rv = set()
@@ -560,7 +561,7 @@ def symbolic(obj, **kargs):
   '''
   makes the symbolic version of an object
   '''
-  if type(obj) in [type(0), type(0.0), type(0L)]:
+  if type(obj) in [type(0), type(0.0), type(0L), numpy.int32]:
     return Number(obj, **kargs)
   elif type(obj) == type('str'):
     return Symbol(obj, **kargs)
