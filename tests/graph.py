@@ -1,5 +1,6 @@
 import symath
 from symath.graph.algorithms import *
+import symath.graph.generation as graphgen
 
 import unittest
 
@@ -24,3 +25,6 @@ class TestDirectedGraph(unittest.TestCase):
     self.assertEqual(len(m), 4)
     self.assertEqual(m[mp[self.x],mp[self.y]], 1)
     self.assertEqual(m[mp[self.x],mp[self.x]], 0)
+
+  def test_random_generation(self):
+    randg = graphgen.random_graph(100, 0.05)
