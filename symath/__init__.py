@@ -1,5 +1,5 @@
 import simplify
-from core import Boolean,Number,Symbol,Wild,symbols,wilds,symbolic,wild,WildResults
+from core import Boolean,Number,Symbol,Wild,symbols,wilds,symbolic,wild,WildResults,desymbolic
 
 import match
 import solvers

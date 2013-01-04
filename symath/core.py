@@ -573,4 +573,15 @@ def symbolic(obj, **kargs):
     msg = "Unknown type (%s) %s passed to symbolic" % (type(obj), obj)
     raise BaseException(msg)
 
+def desymbolic(s):
+  '''
+  returns a numeric version of s
+  '''
+
+  s = s.simplify()
+  if not isinstance(s, Number):
+    raise BaseException("Only numbers can be passed to desymbolic")
+
+  return s.value()
+
 import stdops

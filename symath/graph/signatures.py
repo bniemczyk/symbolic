@@ -63,7 +63,7 @@ def complexity(graph):
   vals = WildResults()
 
   if summation(graph).match(GraphSummation(ns, es), vals):
-    return GraphComplexity(vals.es.n - vals.ns.n + len(graph.exit_nodes) * 2)
+    return GraphComplexity((vals.es - vals.ns + len(graph.exit_nodes) * 2).simplify().n)
   else:
     raise BaseException("Unexpected result from summation()")
 
