@@ -578,6 +578,9 @@ def desymbolic(s):
   returns a numeric version of s
   '''
 
+  if type(s) in (int,long,float):
+    return s
+
   s = s.simplify()
   if not isinstance(s, Number):
     raise BaseException("Only numbers can be passed to desymbolic")

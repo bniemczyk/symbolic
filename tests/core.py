@@ -137,5 +137,12 @@ class TestCoreClasses(unittest.TestCase):
     a(b).match(a(b), vals)
     self.assertEqual(len(vals), 0)
 
+  def test_desymbolic(self):
+    a = symath.desymbolic(3.0)
+    self.assertEqual(a, 3.0)
+
+    a = symath.desymbolic(symath.symbolic(4.0))
+    self.assertEqual(type(a), float)
+
 if __name__ == '__main__':
   unittest.main()
