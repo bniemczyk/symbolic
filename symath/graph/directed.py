@@ -178,7 +178,7 @@ class DirectedGraph(object):
         try:
             f.write(dotg.to_string())
             f.close()
-            os.system('cat %s' % (f.name,))
+            #os.system('cat %s' % (f.name,))
             os.system('xdot --filter=%s %s' % (layout, f.name))
         finally:
             os.unlink(f.name)
