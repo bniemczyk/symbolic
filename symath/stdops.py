@@ -9,7 +9,7 @@ LessThanEq = _sym('<=')
 GreaterThanEq = _sym('>=')
 
 Add = _sym('+', identity=_sym(0), numeric='__add__', commutative=True, associative=True)
-Sub = _sym('-', identity=_sym(0), numeric='__sub__')
+Sub = _sym('-', ridentity=_sym(0), numeric='__sub__')
 Div = _sym('/', ridentity=_sym(1), numeric='__div__')
 Mul = _sym('*', zero=_sym(0), identity=_sym(1), numeric='__mul__', commutative=True, associative=True)
 Pow = _sym('**', ridentity=_sym(1), numeric='__pow__')

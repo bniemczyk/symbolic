@@ -10,6 +10,7 @@ import random
 import string
 from memoize import Memoize
 import numpy
+import util
 
 def collect(exp, fn):
   rv = set()
@@ -73,6 +74,10 @@ class _Symbolic(tuple):
       #  oldexp = exp
       #  exp = exp.walk(fn)
 
+    if util.DEBUG and exp != self:
+      #print '%s => %s (%s)' % (self, exp, fn)
+      pass
+     
     return exp
 
   def _dump(self):
@@ -238,6 +243,10 @@ class Number(_KnownValue):
     self.name = str(n)
     self.n = n
     return self
+
+  @property
+  def is_integer(self):
+    return self.n.is_integer()
 
   def value(self):
     return self.n
