@@ -71,7 +71,7 @@ class DirectedGraph(object):
                 return True
         return False
 
-    def walk(self, src, direction='outgoing'):
+    def walk(self, src, direction='outgoing', depthfirst=False):
         src = self.nodes.setdefault(src, DirectedGraph.Node(src))
         q = deque([(src,0)])
         seen = set([src.value])
@@ -92,7 +92,10 @@ class DirectedGraph(object):
                     continue
                 else:
                     seen.add(i)
-                    q.append((self.nodes[i],level+1))
+                    if depthfirst:
+                      q.appendleft((self.nodes[i], level+1))
+                    else:
+                      q.append((self.nodes[i],level+1))
 
     def within_distance(self, src, distance, direction='outgoing'):
         for n,l in self.walk(src, direction=direction):
