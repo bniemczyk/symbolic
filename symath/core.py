@@ -429,6 +429,14 @@ class Fn(_Symbolic):
 
     return self
 
+  def recursive_substitute(self, subs):
+    y = self
+    while True:
+      x = y.substitute(subs)
+      if x == y:
+        return x
+      y = x
+
   def __getitem__(self, n):
     if n == 0:
       return self.fn
