@@ -5,6 +5,7 @@ from setuptools import setup
 _depends = '''
 numpy
 pydot
+matplotlib
 '''
 
 setup( \
