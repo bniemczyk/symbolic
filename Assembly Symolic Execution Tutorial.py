@@ -8,8 +8,8 @@
 # 
 # At it's core, symath allows a programming paradigm called _symbolic programming_.
 # Even though symbolic programming is often associated with mathematical programming, this
-# is not always the case, and this tutorial will walk you through using symath to create
-# a symbolic execution of a small subset of the x86 assembly language.
+# is not always the case.  This tutorial will walk you through using symath to treat x86 assembly
+# language as symbolic data and 'execute' it without hard values.
 
 # <markdowncell>
 
@@ -32,7 +32,7 @@ from symath import symbols, wilds, WildResults
 # <codecell>
 
 registers = (eax,ebx,ecx,edx,esi,edi,esp,ebp,eflags) = symbols('eax ebx ecx edx esi edi esp ebp eflags')
-print registers
+registers
 
 # <markdowncell>
 
@@ -40,15 +40,15 @@ print registers
 
 # <codecell>
 
-print eax == eax
+eax == eax
 
 # <codecell>
 
-print eax == ebx
+eax == ebx
 
 # <codecell>
 
-print eax == symbols('eax')
+eax == symbols('eax')
 
 # <markdowncell>
 
@@ -58,11 +58,11 @@ print eax == symbols('eax')
 
 # <codecell>
 
-print eax + ebx
+eax + ebx
 
 # <codecell>
 
-print eax & ebx
+eax & ebx
 
 # <markdowncell>
 
@@ -70,12 +70,12 @@ print eax & ebx
 
 # <codecell>
 
-print eax + 4
+eax + 4
 
 # <codecell>
 
 expression = eax + 0
-print expression
+expression
 
 # <markdowncell>
 
@@ -83,15 +83,15 @@ print expression
 
 # <codecell>
 
-print expression.simplify()
+expression.simplify()
 
 # <codecell>
 
-print (ebx ^ ebx).simplify()
+(ebx ^ ebx).simplify()
 
 # <codecell>
 
-print (eax & ecx & eax | ebx).simplify()
+(eax & ecx & eax | ebx).simplify()
 
 # <markdowncell>
 
@@ -100,11 +100,11 @@ print (eax & ecx & eax | ebx).simplify()
 
 # <codecell>
 
-print (ecx & eax).simplify()
+(ecx & eax).simplify()
 
 # <codecell>
 
-print (ecx - ebx).simplify()
+(ecx - ebx).simplify()
 
 # <markdowncell>
 
@@ -112,11 +112,11 @@ print (ecx - ebx).simplify()
 
 # <codecell>
 
-print (ecx & eax) == (eax & ecx)
+(ecx & eax) == (eax & ecx)
 
 # <codecell>
 
-print (ecx & eax).simplify() == (eax & ecx).simplify()
+(ecx & eax).simplify() == (eax & ecx).simplify()
 
 # <markdowncell>
 
@@ -125,17 +125,17 @@ print (ecx & eax).simplify() == (eax & ecx).simplify()
 # <codecell>
 
 expression = ebx + ecx - (edx & (edi | esi))
-print expression
+expression
 
 # <codecell>
 
 expression = expression.substitute({edx: 0})
-print expression
+expression
 
 # <codecell>
 
 expression = expression.simplify()
-print expression
+expression
 
 # <markdowncell>
 
@@ -144,12 +144,16 @@ print expression
 # <codecell>
 
 MOV = symbols('MOV')
-print MOV(eax, ebx)
+MOV(eax, ebx)
 
 # <markdowncell>
 
-# Executing Instructions
-# ----------------------
+# ### TODO: Indexing expressions
+
+# <markdowncell>
+
+# Executing Instructions (Non Control Flow)
+# -----------------------------------------
 # 
 # ### Representing machine state
 # 
@@ -162,10 +166,6 @@ print MOV(eax, ebx)
 # MEMORY(SIZE, _some calculation involving initial values_)
 
 # <codecell>
-
-# machine_state can get large, so it's better to pretty print it
-import pprint
-pp = pprint.PrettyPrinter()
 
 MEMORY = symbols('MEMORY')
 
@@ -183,7 +183,7 @@ def build_initial_machine_state():
 
 machine_state = build_initial_machine_state()
 
-pp.pprint(machine_state)
+machine_state
 
 # <markdowncell>
 
@@ -202,7 +202,7 @@ machine_state[esp] = (machine_state[esp] - 4).simplify()
 machine_state[MEMORY(4, machine_state[esp])] = machine_state[edi]
 
 # print the machine state
-pp.pprint(machine_state)
+machine_state
 
 # <markdowncell>
 
@@ -245,13 +245,15 @@ print results.a # you can also access the values of wilds from results with the 
 
 # ### Executing a single instruction
 # 
-# With pattern matching in hand, it's pretty easy now to write a funcion that takes a symbolic instruction and a machine state, then returns a new machine state
+# With pattern matching in hand, it's pretty easy now to write a funcion that takes a symbolic instruction and a machine state, then returns a new machine state.
+# 
+# The only real trick is if one of the operands is a MEMORY expression, we need to make sure we replace anything in it with the values that we have in machine_state
 
 # <codecell>
 
 from copy import copy
 
-instructions = (MOV, ADD, SUB) = symbols('MOV ADD SUB')
+instructions = (MOV, ADD, SUB, XOR) = symbols('MOV ADD SUB XOR')
 
 def execute_sym_instruction(instruction, machine_state=None):
     
@@ -264,21 +266,41 @@ def execute_sym_instruction(instruction, machine_state=None):
         machine_state = copy(machine_state)
         
     # src and dst operands are extracted during instruction matching
-    src,dst,opsize = wilds('src dst opsize')
+    src,dst,opsize,randominst = wilds('src dst opsize randominst')
     operands = WildResults()
     
+    # resolve MEMORY() expressions
+    if instruction.match(randominst(MEMORY(opsize, dst), src), operands):
+        instruction = operands.randominst(MEMORY(operands.opsize, operands.dst.substitute(machine_state)), operands.src)
+    
+    if instruction.match(randominst(dst, MEMORY(opsize, src)), operands):
+        instruction = operands.randominst(operands.dst, MEMORY(operands.opsize, operands.src.substitute(machine_state)))
+    
+    # do pattern matching and execute correct logic
     if instruction.match(MOV(dst, src), operands):
-        machine_state[operands.dst] = machine_state[operands.src]
+        _s = machine_state[operands.src] if operands.src in machine_state else operands.src
+        machine_state[operands.dst] = _s
         
     elif instruction.match(ADD(dst, src), operands):
-        machine_state[operands.dst] = (machine_state[operands.dst] + machine_state[operands.src]).simplify()
+        _s = machine_state[operands.src] if operands.src in machine_state else operands.src
+        _d = machine_state[operands.dst] if operands.dst in machine_state else operands.dst
+        machine_state[operands.dst] = (_d + _s).simplify()
         machine_state[eflags] = machine_state[operands.dst]
         
     elif instruction.match(SUB(dst, src), operands):
-        machine_state[operands.dst] = (machine_state[operands.dst] - machine_state[operands.src]).simplify()
+        _s = machine_state[operands.src] if operands.src in machine_state else operands.src
+        _d = machine_state[operands.dst] if operands.dst in machine_state else operands.dst
+        machine_state[operands.dst] = (_d - _s).simplify()
+        machine_state[eflags] = machine_state[operands.dst]
+        
+    elif instruction.match(XOR(dst, src), operands):
+        _s = machine_state[operands.src] if operands.src in machine_state else operands.src
+        _d = machine_state[operands.dst] if operands.dst in machine_state else operands.dst
+        machine_state[operands.dst] = (_d ^ _s).simplify()
         machine_state[eflags] = machine_state[operands.dst]
     
-    # TODO: add the rest of the x86 instructions
+    # TODO: add the rest of the x86 instructions, of course we won't do this because we have a better
+    # scheme later
         
     else:
         raise Exception("Unknown instruction passed: %s" % (instruction,))
@@ -289,6 +311,34 @@ def execute_sym_instruction(instruction, machine_state=None):
 
 # a quick example
 execute_sym_instruction(SUB(eax, ebx))
+
+# <markdowncell>
+
+# ### Executing a sequence of instructions
+# 
+# Executing a list of instructions is as simple as executing each instruction one by one and keeping the modifications to the machine state
+
+# <codecell>
+
+def execute_sym_instruction_list(insts, machine_state=None):
+    
+    for inst in insts:
+        machine_state = execute_sym_instruction(inst, machine_state)
+        
+    return machine_state
+
+# <codecell>
+
+XOR,MOV = symbols('XOR MOV')
+_sample_insts = [
+                 XOR(eax, eax),
+                 ADD(ecx, 0x4),
+                 MOV(MEMORY(0x4, ecx), eax),
+                 MOV(ebx, MEMORY(4, ecx))
+                 ]
+
+_state = execute_sym_instruction_list(_sample_insts)
+_state
 
 # <markdowncell>
 
@@ -314,12 +364,12 @@ class IExecuter(object):
 
         params:
             pattern - the pattern (or lambda that takes a WildResults and returns a boolean) this handles, the last register handler that matches will be what is called
-            handler - a function that takes arguments (machine_state, operands)
+            handler - a function that takes arguments (instruction, operands [to be populated])
         '''
         
-        self._handlers.pushfront((pattern, handler))
+        self._handlers.appendleft((pattern, handler))
         
-    def execute(self, instruction, machine_state=None):
+    def execute_single_instruction(self, instruction, machine_state=None):
         
         # make sure our handlers do not clobber each other
         if machine_state == None:
@@ -333,14 +383,159 @@ class IExecuter(object):
         for h in self._handlers:
             
             tester = h[0]
+            handles = False
+            
             if type(tester) == type(lambda x: x):
-                handles = tester(operands)
+                handles = tester(instruction, operands)
             else:
-                handles = tester.match(instruction, operands)
+                handles = instruction.match(tester, operands)
                 
             if handles:
                 return h[1](machine_state, operands)
             
         # no handler was found, so abort
         raise Exception("No handler found for %s" % (instruction,))
+        
+    def execute_instruction_list(self, insts, machine_state=None):
+        for inst in insts:
+            machine_state = self.execute_single_instruction(inst, machine_state)
+        
+        return machine_state
+
+# <markdowncell>
+
+# #### MOV handler
+# TODO: description
+
+# <codecell>
+
+MOV = symbols('MOV')
+
+def add_x86_32bit_mov_handler(iexecuter):
+    src,dst = wilds('src dst')
+    handler_ptrn = MOV(dst, src)
+    
+    def _handler(machine_state, operands):
+        w,n = wilds("w n")
+        for k in operands:
+            if operands[k].match(MEMORY(n, w)):
+                operands[k] = MEMORY(operands[k][1], operands[k][2].substitute(machine_state))
+                
+        _s = machine_state[operands.src] if operands.src in machine_state else operands.src
+        machine_state[operands.dst] = _s
+        return machine_state
+        
+    iexecuter.add_handler(handler_ptrn, _handler)
+
+# <markdowncell>
+
+# #### LEA handler
+# TODO: description
+
+# <codecell>
+
+LEA = symbols('LEA')
+
+def add_x86_32bit_lea_handler(iexecuter):
+    src,dst = wilds('src dst')
+    handler_ptrn = lambda inst, operands: inst.match(LEA(dst, MEMORY(4, src)), operands) and operands.dst in registers
+    
+    def _handler(machine_state, operands):
+        _s = operands.src.substitute(machine_state).simplify()
+        machine_state[operands.dst] = _s
+        return machine_state
+    
+    iexecuter.add_handler(handler_ptrn, _handler)
+    
+
+# <markdowncell>
+
+# #### Two operand 32-bit arithmetic instruction handlers
+# 
+# Many arithmetic instructions in the form of
+# 
+# _INST dest, src_
+# 
+# perform some arithmetic on it's operands and then update the destination and EFLAGS registers.  We can generalize this behaviour.  Right now we will only work with 32 bit registers because smaller registers require special handling due to the fact that they clobber parts of the larger registers.
+
+# <codecell>
+
+def add_x86_32bit_arithmetic_handlers(iexecuter):
+    
+    def build_handler(instruction, symoperator=None):
+        src,dst = wilds('src dst')
+        handler_ptrn = instruction(dst, src) # build the pattern to match
+        
+        def _handler(machine_state, operands): # our actual handler
+            
+            # update the operands MEMORY references
+            w,n = wilds('w n')
+            for k in operands:
+                if operands[k].match(MEMORY(n, w)):
+                    operands[k] = MEMORY(operands[k][1], operands[k][2].substitute(machine_state))
+            
+            # if we know the value of either operand, grab it
+            subbedops = WildResults()
+            subbedops['src'] = machine_state[operands.src] if operands.src in machine_state else operands.src
+            subbedops['dst'] = machine_state[operands.dst] if operands.dst in machine_state else operands.dst
+            
+            # run the provided function
+            rslt = symoperator(subbedops)
+            rslt = rslt.simplify()
+            
+            # update machine state and return
+            machine_state[operands.dst] = rslt
+            machine_state[eflags] = rslt
+            return machine_state
+            
+        return (handler_ptrn, _handler)
+    
+    iexecuter.add_handler(*build_handler(symbols('ADD'), lambda r: r.dst + r.src))
+    iexecuter.add_handler(*build_handler(symbols('SUB'), lambda r: r.dst - r.src))
+    iexecuter.add_handler(*build_handler(symbols('MUL'), lambda r: r.dst * r.src))
+    iexecuter.add_handler(*build_handler(symbols('IMUL'), lambda r: r.dst * r.src))
+    iexecuter.add_handler(*build_handler(symbols('DIV'), lambda r: r.dst / r.src))
+    iexecuter.add_handler(*build_handler(symbols('IDIV'), lambda r: r.dst / r.src))
+    iexecuter.add_handler(*build_handler(symbols('AND'), lambda r: r.dst & r.src))
+    iexecuter.add_handler(*build_handler(symbols('OR'), lambda r: r.dst | r.src))
+    iexecuter.add_handler(*build_handler(symbols('XOR'), lambda r: r.dst ^ r.src))
+
+# <markdowncell>
+
+# ### Creating an IExecuter factory and Using it
+# 
+# It's easy to wrap up our add_*_handler functions into a factory method so that we do not have
+# to call them by hand repeatedly
+
+# <codecell>
+
+def executer_x86_factory():
+    iexec = IExecuter()
+    add_x86_32bit_mov_handler(iexec)
+    add_x86_32bit_lea_handler(iexec)
+    add_x86_32bit_arithmetic_handlers(iexec)
+    return iexec
+
+# <markdowncell>
+
+# #### A quick test run of what we have so far
+
+# <codecell>
+
+if _sample_insts[1][0] != LEA:
+    _sample_insts.insert(1, LEA(eax, MEMORY(4, eax + 42)))
+    
+_sample_insts
+
+# <codecell>
+
+iexec = executer_x86_factory()
+iexec.execute_instruction_list(_sample_insts)
+
+# <markdowncell>
+
+# Selecting Interesting instruction sequences to execute
+# ------------------------------------------------------
+# 
+# TODO
 
