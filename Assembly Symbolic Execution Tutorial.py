@@ -354,7 +354,8 @@ _state
 # ### Building a flexible instruction handling class
 # 
 # The above scheme (lots of hard-coded if tests) works, but is not ideal.  We would really like to be able to dynamically add handlers for different patterns, so that's it is easy to customize
-# at runtime.  This makes it so that you can set the effects of specific function calls etc... without having to execute the full function.
+# at runtime.  This makes it so that you can set the effects of specific function calls etc... without having to execute the full function.  In addition life is easier if we define our core functionality
+# in a small IR (intermediate representation), and then instead of executing x86 assembly directly, translate it to several IR instructions.
 # 
 # Doing it this way will also allow us to specialize instructions later when we do things like add support for the smaller registers (ax,al,ah,etc...)
 
@@ -366,6 +367,9 @@ class IExecuter(object):
     
     def __init__(self):
         self._handlers = deque()
+        
+        # provide 'hooks' instructions, this eases analysis later on
+        self.hooks = {}
         
     def add_handler(self, pattern, handler):
         '''
@@ -413,6 +417,97 @@ class IExecuter(object):
 
 # <markdowncell>
 
+# ### Creating an IR
+
+# <markdowncell>
+
+# #### Loading and saving values to/from registers and memory
+
+# <codecell>
+
+ir_LOAD, ir_LOAD_CONSTANT, ir_SAVE = symbols('ir_LOAD ir_LOAD_CONSTANT ir_SAVE')
+ir_VALUE = symbols('ir_VALUE')
+
+def add_ir_load_save_handlers(iexec):
+    n,dst,src,srcsize,ptr = wilds('n dst src srcsize ptr')
+    wres = WildResults()
+    
+    def _load_handler(state, operands):
+        if operands.src.match(MEMORY(srcsize, ptr), wres):
+            operands['src'] = MEMORY(wres.srcsize, wres.ptr.substitute(state).simplify())
+            
+        _s = state[operands.src] if operands.src in state else operands.src
+        state[ir_VALUE(operands.n)] = _s
+        
+        # run user hooks
+        if 'ir_LOAD' in iexec.hooks:
+            iexec.hooks['ir_LOAD'](_s)
+        
+        return state
+    
+    iexec.add_handler(ir_LOAD(n, src), _load_handler)
+    
+    def _load_constant_handler(state, operands):
+        _s = operands.src.simplify()
+        
+        state[ir_VALUE(operands.n)] = _s
+        
+        if 'ir_LOAD_CONSTANT' in iexec.hooks:
+            iexec.hooks['ir_LOAD_CONSTANT'](_s)
+            
+        return state
+    
+    iexec.add_handler(ir_LOAD_CONSTANT(n, src), _load_constant_handler)
+    
+    def _save_handler(state, operands):
+        if operands.dst.match(MEMORY(srcsize, ptr), wres):
+            operands['dst'] = MEMORY(wres.srcsize, wres.ptr.substitute(state).simplify())
+            
+        state[operands.dst] = state[ir_VALUE(operands.n)]
+        
+        if 'ir_SAVE' in iexec.hooks:
+            iexec.hooks['ir_SAVE'](state[ir_VALUE(operands.n)], operands.dst)
+            
+        return state
+    
+    iexec.add_handler(ir_SAVE(n, dst), _save_handler)
+
+# <markdowncell>
+
+# #### Calculation
+
+# <codecell>
+
+ir_CALC = symbols('ir_CALC')
+
+def add_ir_calc_handler(iexec):
+    
+    n, exp = wilds('n exp')
+    
+    def _calc_handler(state, operands):
+        _exp = operands.exp.substitute(state).simplify()
+        return iexec.execute_single_instruction(ir_LOAD_CONSTANT(operands.n, _exp), state)
+    
+    iexec.add_handler(ir_CALC(n, exp), _calc_handler)
+
+# <markdowncell>
+
+# #### Building a factory
+
+# <codecell>
+
+def iexecuter_ir_factory():
+    iexec = IExecuter()
+    add_ir_load_save_handlers(iexec)
+    add_ir_calc_handler(iexec)
+    return iexec
+
+# <markdowncell>
+
+# ### Implementing x86 handlers
+
+# <markdowncell>
+
 # #### MOV handler
 # TODO: description
 
@@ -420,21 +515,19 @@ class IExecuter(object):
 
 MOV = symbols('MOV')
 
-def add_x86_32bit_mov_handler(iexecuter):
-    src,dst = wilds('src dst')
-    handler_ptrn = MOV(dst, src)
+def add_x86_32bit_mov_handler(iexec):
     
-    def _handler(machine_state, operands):
-        w,n = wilds("w n")
-        for k in operands:
-            if operands[k].match(MEMORY(n, w)):
-                operands[k] = MEMORY(operands[k][1], operands[k][2].substitute(machine_state))
-                
-        _s = machine_state[operands.src] if operands.src in machine_state else operands.src
-        machine_state[operands.dst] = _s
-        return machine_state
+    src,dst = wilds('src dst')
+    
+    def _handler(state, operands):
+        ir = [
+              ir_LOAD(1, operands.src),
+              ir_SAVE(1, operands.dst)
+              ]
         
-    iexecuter.add_handler(handler_ptrn, _handler)
+        return iexec.execute_instruction_list(ir, state)
+    
+    iexec.add_handler(MOV(dst, src), _handler)
 
 # <markdowncell>
 
@@ -445,16 +538,18 @@ def add_x86_32bit_mov_handler(iexecuter):
 
 LEA = symbols('LEA')
 
-def add_x86_32bit_lea_handler(iexecuter):
-    src,dst = wilds('src dst')
-    handler_ptrn = lambda inst, operands: inst.match(LEA(dst, MEMORY(4, src)), operands) and operands.dst in registers
+def add_x86_32bit_lea_handler(iexec):
+    src,dst,memsize = wilds('src dst memsize')
     
-    def _handler(machine_state, operands):
-        _s = operands.src.substitute(machine_state).simplify()
-        machine_state[operands.dst] = _s
-        return machine_state
+    def _handler(state, operands):
+        _s = operands.src.substitute(state)
+        
+        return iexec.execute_instruction_list([
+                                               ir_LOAD_CONSTANT(1, _s),
+                                               ir_SAVE(1, operands.dst)
+                                               ], state)
     
-    iexecuter.add_handler(handler_ptrn, _handler)
+    iexec.add_handler(LEA(dst, MEMORY(memsize, src)), _handler)
     
 
 # <markdowncell>
@@ -471,45 +566,30 @@ def add_x86_32bit_lea_handler(iexecuter):
 
 arithmetic_instructions = (ADD,SUB,MUL,IMUL,DIV,IDIV,AND,OR,XOR) = symbols('ADD SUB MUL IMUL DIV IDIV AND OR XOR')
 
-def add_x86_32bit_arithmetic_handlers(iexecuter):
+def add_x86_32bit_arithmetic_handlers(iexec):
     
-    def build_handler(instruction, symoperator=None):
+    def _register_handler(inst, exp):
         src,dst = wilds('src dst')
-        handler_ptrn = instruction(dst, src) # build the pattern to match
         
-        def _handler(machine_state, operands): # our actual handler
-            
-            # update the operands MEMORY references
-            w,n = wilds('w n')
-            for k in operands:
-                if operands[k].match(MEMORY(n, w)):
-                    operands[k] = MEMORY(operands[k][1], operands[k][2].substitute(machine_state))
-            
-            # if we know the value of either operand, grab it
-            subbedops = WildResults()
-            subbedops['src'] = machine_state[operands.src] if operands.src in machine_state else operands.src
-            subbedops['dst'] = machine_state[operands.dst] if operands.dst in machine_state else operands.dst
-            
-            # run the provided function
-            rslt = symoperator(subbedops)
-            rslt = rslt.simplify()
-            
-            # update machine state and return
-            machine_state[operands.dst] = rslt
-            machine_state[eflags] = rslt
-            return machine_state
-            
-        return (handler_ptrn, _handler)
-    
-    iexecuter.add_handler(*build_handler(ADD, lambda r: r.dst + r.src))
-    iexecuter.add_handler(*build_handler(SUB, lambda r: r.dst - r.src))
-    iexecuter.add_handler(*build_handler(MUL, lambda r: r.dst * r.src))
-    iexecuter.add_handler(*build_handler(IMUL, lambda r: r.dst * r.src))
-    iexecuter.add_handler(*build_handler(DIV, lambda r: r.dst / r.src))
-    iexecuter.add_handler(*build_handler(IDIV, lambda r: r.dst / r.src))
-    iexecuter.add_handler(*build_handler(AND, lambda r: r.dst & r.src))
-    iexecuter.add_handler(*build_handler(OR, lambda r: r.dst | r.src))
-    iexecuter.add_handler(*build_handler(XOR, lambda r: r.dst ^ r.src))
+        def _handler(state, operands):
+            return iexec.execute_instruction_list([
+                                                    ir_LOAD(1, operands.dst),
+                                                    ir_LOAD(2, operands.src),
+                                                    ir_CALC(3, exp),
+                                                    ir_SAVE(3, operands.dst)
+                                                    ], state)
+        
+        iexec.add_handler(inst(dst, src), _handler)
+        
+    _register_handler(ADD, ir_VALUE(1) + ir_VALUE(2))
+    _register_handler(SUB, ir_VALUE(1) - ir_VALUE(2))
+    _register_handler(MUL, ir_VALUE(1) * ir_VALUE(2))
+    _register_handler(IMUL, ir_VALUE(1) * ir_VALUE(2))
+    _register_handler(DIV, ir_VALUE(1) / ir_VALUE(2))
+    _register_handler(IDIV, ir_VALUE(1) / ir_VALUE(2))
+    _register_handler(AND, ir_VALUE(1) & ir_VALUE(2))
+    _register_handler(OR, ir_VALUE(1) | ir_VALUE(2))
+    _register_handler(XOR, ir_VALUE(1) ^ ir_VALUE(2))
 
 # <markdowncell>
 
@@ -520,27 +600,25 @@ def add_x86_32bit_arithmetic_handlers(iexecuter):
 INC,DEC = symbols('INC DEC')
 
 def add_x86_32bit_inc_dec_handler(iexec):
-    src, w, n = wilds('src w n')
-            
-    def _inc_handler(machine_state, operands):
-        if operands.src.match(MEMORY(n, w)):
-            operands['src'] = MEMORY(operands.src[1], operands.src[2].substitute(machine_state))
-            
-        _s = machine_state[operands.src] if operands.src in machine_state else operands.src
-        machine_state[operands.src] = (_s + 1).simplify()
-        return machine_state
+    src = wilds('src')
     
-    iexec.add_handler(INC(src), _inc_handler)
+    def _handler(state, operands):
+        return iexec.execute_instruction_list([
+                                               ir_LOAD(1, operands.src),
+                                               ir_CALC(2, ir_VALUE(1) + 0x1),
+                                               ir_SAVE(2, operands.src)
+                                               ], state)
     
-    def _dec_handler(machine_state, operands):
-        if operands.src.match(MEMORY(n, w)):
-            operands['src'] = MEMORY(operands.src[1], operands.src[2].substitute(machine_state))
-            
-        _s = machine_state[operands.src] if operands.src in machine_state else operands.src
-        machine_state[operands.src] = (_s - 1).simplify()
-        return machine_state
+    iexec.add_handler(INC(src), _handler)
     
-    iexec.add_handler(DEC(src), _dec_handler)
+    def _handler(state, operands):
+        return iexec.execute_instruction_list([
+                                               ir_LOAD(1, operands.src),
+                                               ir_CALC(2, ir_VALUE(1) - 0x1),
+                                               ir_SAVE(2, operands.src)
+                                               ], state)
+    
+    iexec.add_handler(DEC(src), _handler)
 
 # <markdowncell>
 
@@ -563,15 +641,12 @@ def add_x86_32bit_inc_dec_handler(iexec):
 
 # <markdowncell>
 
-# ### Creating an IExecuter factory and using it
-# 
-# It's easy to wrap up our add_*_handler functions into a factory method so that we do not have
-# to call them by hand repeatedly
+# #### Creating an IExecuter factory for x86
 
 # <codecell>
 
-def executer_x86_factory():
-    iexec = IExecuter()
+def iexecuter_x86_factory():
+    iexec = iexecuter_ir_factory()
     add_x86_32bit_mov_handler(iexec)
     add_x86_32bit_lea_handler(iexec)
     add_x86_32bit_arithmetic_handlers(iexec)
@@ -597,7 +672,7 @@ _sample_insts = [
                  ]
 
 # now run the sample instructions
-iexec = executer_x86_factory()
+iexec = iexecuter_x86_factory()
 iexec.execute_instruction_list(_sample_insts)
 
 # <markdowncell>
