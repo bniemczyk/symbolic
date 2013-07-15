@@ -18,7 +18,16 @@
 
 # <codecell>
 
-from symath import symbols, wilds, WildResults
+import symath
+from symath import symbols, wilds, WildResults # these will be used a lot
+
+# <markdowncell>
+
+# You can set symath to display integers in hex if you would like as well, this is nice when working with x86 code
+
+# <codecell>
+
+symath.Number.IFORMAT = hex
 
 # <markdowncell>
 
@@ -152,8 +161,8 @@ MOV(eax, ebx)
 
 # <markdowncell>
 
-# Executing Instructions (Non Control Flow)
-# -----------------------------------------
+# Executing Instructions
+# ----------------------
 # 
 # ### Representing machine state
 # 
@@ -460,6 +469,8 @@ def add_x86_32bit_lea_handler(iexecuter):
 
 # <codecell>
 
+arithmetic_instructions = (ADD,SUB,MUL,IMUL,DIV,IDIV,AND,OR,XOR) = symbols('ADD SUB MUL IMUL DIV IDIV AND OR XOR')
+
 def add_x86_32bit_arithmetic_handlers(iexecuter):
     
     def build_handler(instruction, symoperator=None):
@@ -490,19 +501,69 @@ def add_x86_32bit_arithmetic_handlers(iexecuter):
             
         return (handler_ptrn, _handler)
     
-    iexecuter.add_handler(*build_handler(symbols('ADD'), lambda r: r.dst + r.src))
-    iexecuter.add_handler(*build_handler(symbols('SUB'), lambda r: r.dst - r.src))
-    iexecuter.add_handler(*build_handler(symbols('MUL'), lambda r: r.dst * r.src))
-    iexecuter.add_handler(*build_handler(symbols('IMUL'), lambda r: r.dst * r.src))
-    iexecuter.add_handler(*build_handler(symbols('DIV'), lambda r: r.dst / r.src))
-    iexecuter.add_handler(*build_handler(symbols('IDIV'), lambda r: r.dst / r.src))
-    iexecuter.add_handler(*build_handler(symbols('AND'), lambda r: r.dst & r.src))
-    iexecuter.add_handler(*build_handler(symbols('OR'), lambda r: r.dst | r.src))
-    iexecuter.add_handler(*build_handler(symbols('XOR'), lambda r: r.dst ^ r.src))
+    iexecuter.add_handler(*build_handler(ADD, lambda r: r.dst + r.src))
+    iexecuter.add_handler(*build_handler(SUB, lambda r: r.dst - r.src))
+    iexecuter.add_handler(*build_handler(MUL, lambda r: r.dst * r.src))
+    iexecuter.add_handler(*build_handler(IMUL, lambda r: r.dst * r.src))
+    iexecuter.add_handler(*build_handler(DIV, lambda r: r.dst / r.src))
+    iexecuter.add_handler(*build_handler(IDIV, lambda r: r.dst / r.src))
+    iexecuter.add_handler(*build_handler(AND, lambda r: r.dst & r.src))
+    iexecuter.add_handler(*build_handler(OR, lambda r: r.dst | r.src))
+    iexecuter.add_handler(*build_handler(XOR, lambda r: r.dst ^ r.src))
 
 # <markdowncell>
 
-# ### Creating an IExecuter factory and Using it
+# #### Inc and Dec handlers
+
+# <codecell>
+
+INC,DEC = symbols('INC DEC')
+
+def add_x86_32bit_inc_dec_handler(iexec):
+    src, w, n = wilds('src w n')
+            
+    def _inc_handler(machine_state, operands):
+        if operands.src.match(MEMORY(n, w)):
+            operands['src'] = MEMORY(operands.src[1], operands.src[2].substitute(machine_state))
+            
+        _s = machine_state[operands.src] if operands.src in machine_state else operands.src
+        machine_state[operands.src] = (_s + 1).simplify()
+        return machine_state
+    
+    iexec.add_handler(INC(src), _inc_handler)
+    
+    def _dec_handler(machine_state, operands):
+        if operands.src.match(MEMORY(n, w)):
+            operands['src'] = MEMORY(operands.src[1], operands.src[2].substitute(machine_state))
+            
+        _s = machine_state[operands.src] if operands.src in machine_state else operands.src
+        machine_state[operands.src] = (_s - 1).simplify()
+        return machine_state
+    
+    iexec.add_handler(DEC(src), _dec_handler)
+
+# <markdowncell>
+
+# #### Stack operations
+# TODO
+
+# <markdowncell>
+
+# #### CALL handler
+# 
+# TODO
+
+# <markdowncell>
+
+# #### BRANCH instruction handlers
+# 
+# TODO:
+# 
+# notes - add CONSTRAINT(address) registers to machine_state
+
+# <markdowncell>
+
+# ### Creating an IExecuter factory and using it
 # 
 # It's easy to wrap up our add_*_handler functions into a factory method so that we do not have
 # to call them by hand repeatedly
@@ -514,6 +575,7 @@ def executer_x86_factory():
     add_x86_32bit_mov_handler(iexec)
     add_x86_32bit_lea_handler(iexec)
     add_x86_32bit_arithmetic_handlers(iexec)
+    add_x86_32bit_inc_dec_handler(iexec)
     return iexec
 
 # <markdowncell>
@@ -522,15 +584,25 @@ def executer_x86_factory():
 
 # <codecell>
 
-if _sample_insts[1][0] != LEA:
-    _sample_insts.insert(1, LEA(eax, MEMORY(4, eax + 42)))
-    
-_sample_insts
+_sample_insts = [
+                 XOR(eax, eax), # set eax to 0
+                 LEA(eax, MEMORY(0x4, eax + 0xff)), # a common trick used by compilers for quick arithmetic
+                 DEC(eax), # eax should now be 0xfe
+                 ADD(ecx, 0x4), # ecx is it's original value + 4
+                 MOV(MEMORY(0x4, ecx), eax),
+                 MOV(edx, ecx), # copy ecx to edx
+                 MOV(ebx, MEMORY(0x4, edx)), # ebx is now equal to eax
+                 INC(ebx), INC(ebx), # add 2 to ebx, setting it to 0x100
+                 AND(ebx, 0xff) # clear all but the bottom byte of ebx, effectively setting it to 0
+                 ]
 
-# <codecell>
-
+# now run the sample instructions
 iexec = executer_x86_factory()
 iexec.execute_instruction_list(_sample_insts)
+
+# <markdowncell>
+
+# Note that ebx is correctly 0, even though it had to go through multiple arithmetic operations and memory accesses that were indexed by different registers.
 
 # <markdowncell>
 
