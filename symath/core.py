@@ -108,6 +108,19 @@ class _Symbolic(tuple):
 
     return self
 
+  def compile(self, *arguments):
+    '''compiles a symbolic expression with arguments to a python function'''
+
+    def _compiled_func(*args):
+      assert len(args) == len(arguments)
+      argdic = {}
+      for i in range(len(args)):
+        argdic[arguments[i]] = args[i]
+      rv = self.substitute(argdic).simplify()
+      return desymbolic(rv)
+
+    return _compiled_func
+
   def __eq__(self, other):
     #return type(self) == type(other) and self.name == other.name
     return id(self) == id(other)

@@ -11,6 +11,13 @@ class TestCoreClasses(unittest.TestCase):
     self.assertEqual((self.x * 1).simplify(), (self.x).simplify())
     self.assertEqual((self.x + 0).simplify(), (self.x).simplify())
 
+  def test_compile(self):
+    exp = self.x + (self.y * self.z) ** 2
+    cexp = exp.compile(self.x, self.y, self.z)
+    result = cexp(1,2,3)
+    self.assertEqual(result, 37.0)
+    self.assertEqual(type(result), type(37.0))
+
   def test_zero(self):
     self.assertEqual((self.x * 0).simplify(), 0)
 

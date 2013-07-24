@@ -47,6 +47,8 @@ def diff(expression, variable):
   vals = WildResults()
   f,a,b = wilds('f a b')
 
+  expression = expression.simplify()
+
   if variable not in expression:
     return symbolic(0)
 
