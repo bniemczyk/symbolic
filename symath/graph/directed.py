@@ -11,9 +11,17 @@ class DirectedGraph(object):
             self.outgoing = set()
             self.incoming = set()
             self.value = value
+            self.color = 'black'
 
     def clear():
         self.nodes = {}
+
+    def get_color(self, node):
+      return self.nodes[node].color
+
+    def set_color(self, node, color):
+      self.add_node(node)
+      self.nodes[node].color = color
 
     def copy(self):
         return copy.deepcopy(self)
@@ -195,7 +203,7 @@ class DirectedGraph(object):
 
         dotnodes = {}
         for n in self.nodes:
-            dotnodes[n] = pydot.Node(str(n))
+            dotnodes[n] = pydot.Node(str(n), color=self.get_color(n))
             dotg.add_node(dotnodes[n])
 
         for n in self.nodes:
