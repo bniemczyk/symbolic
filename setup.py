@@ -6,6 +6,7 @@ _depends = '''
 numpy
 pydot
 matplotlib
+pyparsing==1.5.7
 '''
 
 setup( \
