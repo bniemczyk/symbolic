@@ -99,7 +99,7 @@ def powerhash(graph):
   for n in range(len(A)):
     dia = list(numpy.diag(Aprime))
     dia.sort()
-    Aprime = Aprime * A
+    Aprime = numpy.dot(Aprime,A)
     hsum.append(d(*dia))
 
   hsum = str(GraphPowerHash(*hsum))

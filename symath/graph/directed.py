@@ -23,6 +23,22 @@ class DirectedGraph(object):
         self.edges = {}
         self.metadata = {}
 
+    @staticmethod
+    def from_adjacency(nodes, adjM):
+      g = DirectedGraph()
+
+      nodesP = {}
+      for k in nodes:
+        nodesP[nodes[k]] = k
+        g.add_node(k)
+
+      for i in range(len(adjM)):
+        for j in range(len(adjM)):
+          if adjM[i,j] > 0:
+            g.connect(nodesP[i], nodesP[j])
+
+      return g
+
     def add_node(self, node):
         self.nodes.setdefault(node, DirectedGraph.Node(node))
 
@@ -129,12 +145,12 @@ class DirectedGraph(object):
             ids[i.value] = nid
             nid += 1
 
-        m = numpy.zeros((nid,nid), dtype=numpy.int)
+        m = numpy.zeros((nid,nid), dtype=int)
         for i in self.nodes.values():
             for j in i.outgoing:
-                m[ids[i.value],ids[j]] = numpy.int(1)
+                m[ids[i.value],ids[j]] = 1
 
-        return (ids, numpy.matrix(m))
+        return (ids, numpy.array(m,dtype=int))
 
     def _edge_count(self):
         ec = 0
@@ -193,7 +209,7 @@ class DirectedGraph(object):
       finally:
         os.unlink(fname)
 
-    def ivisualize(self):
+    def _repr_svg_(self):
       '''
       visualize in IPython
       '''
@@ -207,7 +223,7 @@ class DirectedGraph(object):
       svg = SVG(filename=f.name)
       os.unlink(f.name)
       os.unlink(fname)
-      return svg
+      return svg.data
 
 if __name__ == '__main__':
     from algorithms import *
