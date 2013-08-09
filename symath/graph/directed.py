@@ -21,7 +21,7 @@ class DirectedGraph(object):
     def __init__(self):
         self.nodes = {}
         self.edges = {}
-        self.metadata = {}
+        self.edge_weights = {}
 
     @staticmethod
     def from_adjacency(nodes, adjM):
@@ -36,13 +36,14 @@ class DirectedGraph(object):
         for j in range(len(adjM)):
           if adjM[i,j] > 0:
             g.connect(nodesP[i], nodesP[j])
+            g.set_weight(adjM[i,j], nodesP[i], nodesP[j])
 
       return g
 
     def add_node(self, node):
         self.nodes.setdefault(node, DirectedGraph.Node(node))
 
-    def connect(self, src, dst, edgeValue=None):
+    def connect(self, src, dst, edgeValue=None, weight=1):
         if src not in self.nodes:
             self.nodes[src] = DirectedGraph.Node(src)
         if dst not in self.nodes:
@@ -53,6 +54,19 @@ class DirectedGraph(object):
 
         if edgeValue != None:
             self.edges.setdefault((src,dst), set()).add(edgeValue)
+
+    def set_weight(self, w, src, dst, edgeValue=None):
+      self.connect(src,dst,edgeValue)
+      self.edge_weights[(src,dst,edgeValue)] = w
+
+    def get_weight(self, src, dst, edgeValue=None):
+      if not self.connectedQ(src,dst):
+        return 0
+
+      if (src,dst,edgeValue) not in self.edge_weights:
+        return 1
+
+      return self.edge_weights[(src,dst,edgeValue)]
 
     def disconnect(self, src, dst):
       self.nodes[src].outgoing.remove(dst)
@@ -145,12 +159,12 @@ class DirectedGraph(object):
             ids[i.value] = nid
             nid += 1
 
-        m = numpy.zeros((nid,nid), dtype=int)
+        m = numpy.zeros((nid,nid), dtype=float)
         for i in self.nodes.values():
             for j in i.outgoing:
-                m[ids[i.value],ids[j]] = 1
+                m[ids[i.value],ids[j]] = self.get_weight(i.value, j)
 
-        return (ids, numpy.array(m,dtype=int))
+        return (ids, numpy.array(m,dtype=float))
 
     def _edge_count(self):
         ec = 0
