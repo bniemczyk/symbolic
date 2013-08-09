@@ -157,7 +157,7 @@ class DirectedGraph(object):
         if len(i.incoming) == 0:
           return i
 
-    def visualize(self,layout='dot'):
+    def _write_dot_file(self,layout='dot'):
         import pydot
         import tempfile
         import os
@@ -178,13 +178,36 @@ class DirectedGraph(object):
 
         f = tempfile.NamedTemporaryFile(mode='w+b',delete=False)
 
-        try:
-            f.write(dotg.to_string())
-            f.close()
-            #os.system('cat %s' % (f.name,))
-            os.system('xdot --filter=%s %s' % (layout, f.name))
-        finally:
-            os.unlink(f.name)
+        f.write(dotg.to_string())
+        f.close()
+        return f.name
+
+    def visualize(self):
+      '''
+      visualize using xdot
+      '''
+      import os
+      try:
+        fname = self._write_dot_file()
+        os.system('xdot --filter=%s %s' % (layout, fname))
+      finally:
+        os.unlink(fname)
+
+    def ivisualize(self):
+      '''
+      visualize in IPython
+      '''
+      from IPython.display import SVG
+      import os
+      import tempfile
+      fname = self._write_dot_file()
+      f = tempfile.NamedTemporaryFile(mode='w+b', delete=False)
+      f.close()
+      os.system('dot -Tsvg -o %s %s' % (f.name, fname))
+      svg = SVG(filename=f.name)
+      os.unlink(f.name)
+      os.unlink(fname)
+      return svg
 
 if __name__ == '__main__':
     from algorithms import *
