@@ -26,14 +26,15 @@ class DirectedGraph(object):
     def copy(self):
         return copy.deepcopy(self)
 
-    def __init__(self):
+    def __init__(self, show_weights=False):
         self.nodes = {}
         self.edges = {}
         self.edge_weights = {}
+        self.show_weights = show_weights
 
     @staticmethod
-    def from_adjacency(nodes, adjM):
-      g = DirectedGraph()
+    def from_adjacency(nodes, adjM, **kargs):
+      g = DirectedGraph(**kargs)
 
       nodesP = {}
       for k in nodes:
@@ -212,6 +213,9 @@ class DirectedGraph(object):
                     for e in self.edges[(n,o)]:
                         dotg.add_edge(pydot.Edge(dotnodes[n], dotnodes[o],label=e))
                 else:
+                  if self.show_weights:
+                    dotg.add_edge(pydot.Edge(dotnodes[n], dotnodes[o], label=self.get_weight(n, o)))
+                  else:
                     dotg.add_edge(pydot.Edge(dotnodes[n], dotnodes[o]))
 
         f = tempfile.NamedTemporaryFile(mode='w+b',delete=False)
