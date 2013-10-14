@@ -21,3 +21,6 @@ BitXor = _sym('^', cast=int, identity=_sym(0), numeric='__xor__', commutative=Tr
 LogicalAnd = _sym('&&', cast=bool, zero=_sym(False), numeric='__and__', commutative=True, associative=True)
 LogicalOr = _sym('||', cast=bool, zero=_sym(True), numeric='__or__', commutative=True, associative=True)
 LogicalXor = _sym('^^', cast=bool, numeric='__xor__', commutative=True, associative=False)
+
+# Sum(variable, min, max, expression)
+Sum = _sym('Sum')

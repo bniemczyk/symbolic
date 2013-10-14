@@ -69,6 +69,8 @@ def complexity(graph):
 
 def powerhash(graph):
   '''
+  TODO: MAY BE BROKEN SINCE SWITCHING TO SPARSE MATRIX FORMAT FOR GRAPHS
+
   based on: Approaches to Solving The Graph Isomorphism Problem by Jordy Eikenberry
 
   returns: Eikenberry(nodecount : int, hash : string)

@@ -22,7 +22,7 @@ class TestDirectedGraph(unittest.TestCase):
 
   def test_adj_matrix(self):
     mp,m = self.g.adjacency_matrix()
-    self.assertEqual(len(m), 4)
+    self.assertEqual(m.shape[0], 4)
     self.assertEqual(m[mp[self.x],mp[self.y]], 1)
     self.assertEqual(m[mp[self.x],mp[self.x]], 0)
 

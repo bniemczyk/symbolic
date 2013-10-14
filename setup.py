@@ -7,6 +7,7 @@ numpy
 pydot
 matplotlib
 pyparsing==1.5.7
+scipy
 '''
 
 setup( \
@@ -20,6 +21,7 @@ setup( \
   test_suite='tests', \
   license='BSD', \
   install_requires=_depends, \
+  zip_safe=False, \
   classifiers = [ \
     'Development Status :: 3 - Alpha', \
     'Intended Audience :: Developers', \

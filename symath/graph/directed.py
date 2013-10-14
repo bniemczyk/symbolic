@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from collections import deque
 import copy
-import numpy
+import scipy.sparse as sparse
 
 # it may be simpler to represent these as an adjacency matrix directly, but i plan
 # on using some big ass graphs, so we save some memory by doing it this way
@@ -41,9 +41,11 @@ class DirectedGraph(object):
         nodesP[nodes[k]] = k
         g.add_node(k)
 
-      for i in range(len(adjM)):
-        for j in range(len(adjM)):
-          if adjM[i,j] > 0:
+      # TODO: exploit adjacency of adjM if possible to make this faster
+      #for i in range(len(adjM)):
+      #  for j in range(len(adjM)):
+      for (i,j) in zip(*adjM.nonzero()):
+            #if adjM[i,j] > 0:
             g.connect(nodesP[i], nodesP[j])
             g.set_weight(adjM[i,j], nodesP[i], nodesP[j])
 
@@ -168,12 +170,12 @@ class DirectedGraph(object):
             ids[i.value] = nid
             nid += 1
 
-        m = numpy.zeros((nid,nid), dtype=float)
+        m = sparse.lil_matrix((nid,nid), dtype=float)
         for i in self.nodes.values():
             for j in i.outgoing:
                 m[ids[i.value],ids[j]] = self.get_weight(i.value, j)
 
-        return (ids, numpy.array(m,dtype=float))
+        return (ids, m)
 
     def _edge_count(self):
         ec = 0
