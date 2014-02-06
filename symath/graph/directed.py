@@ -79,9 +79,14 @@ class DirectedGraph(object):
 
       return self.edge_weights[(src,dst,edgeValue)]
 
-    def disconnect(self, src, dst):
-      self.nodes[src].outgoing.remove(dst)
-      self.nodes[dst].incoming.remove(src)
+    def disconnect(self, src, dst, edgeValue=None):
+
+      if edgeValue != None:
+        self.edges.setdefault((src,dst), set()).remove(edgeValue)
+
+      if edgeValue == None or len(self.edges.setdefault((src,dst), set())) == 0:
+        self.nodes[src].outgoing.remove(dst)
+        self.nodes[dst].incoming.remove(src)
 
     def strip_edges_to(self, dst):
         n = self.nodes[dst]

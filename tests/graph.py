@@ -11,6 +11,7 @@ class TestDirectedGraph(unittest.TestCase):
     self.g = symath.graph.directed.DirectedGraph()
     self.g.connect(self.x, self.y, self.e1)
     self.g.connect(self.y, self.z, self.e2)
+    self.g.connect(self.x, self.y, self.e2)
     self.g.connect(self.z, self.w)
     self.g.connect(self.x, self.w)
 
@@ -28,3 +29,17 @@ class TestDirectedGraph(unittest.TestCase):
 
   def test_random_generation(self):
     randg = graphgen.random_graph(100, 0.05)
+
+  def test_edgevalue_disconnect(self):
+    g = symath.graph.directed.DirectedGraph()
+    g.connect(self.x, self.y, self.e1)
+    g.connect(self.x, self.y, self.e2)
+    g.disconnect(self.x, self.y)
+    self.assertFalse(g.connectedQ(self.x, self.y))
+
+    g.connect(self.x, self.y, self.e1)
+    g.connect(self.x, self.y, self.e2)
+    g.disconnect(self.x, self.y, self.e1)
+    self.assertTrue(g.connectedQ(self.x, self.y))
+    g.disconnect(self.x, self.y, self.e2)
+    self.assertFalse(g.connectedQ(self.x, self.y))
