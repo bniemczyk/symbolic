@@ -86,7 +86,7 @@ class DirectedGraph(object):
         if edgeValue in self.edges[(src,dst)]:
           self.edges[(src,dst)].remove(edgeValue)
 
-      if edgeValue == None or len(self.edges.setdefault((src,dst), set())) == 0:
+      if (edgeValue == None or len(self.edges.setdefault((src,dst), set())) == 0) and dst in self.nodes[src].outgoing:
         self.nodes[src].outgoing.remove(dst)
         self.nodes[dst].incoming.remove(src)
 
