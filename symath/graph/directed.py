@@ -82,7 +82,9 @@ class DirectedGraph(object):
     def disconnect(self, src, dst, edgeValue=None):
 
       if edgeValue != None:
-        self.edges.setdefault((src,dst), set()).remove(edgeValue)
+        self.edges.setdefault((src,dst), set())
+        if edgeValue in self.edges[(src,dst)]:
+          self.edges[(src,dst)].remove(edgeValue)
 
       if edgeValue == None or len(self.edges.setdefault((src,dst), set())) == 0:
         self.nodes[src].outgoing.remove(dst)
