@@ -2,6 +2,7 @@
 from collections import deque
 import copy
 import scipy.sparse as sparse
+import symath.datastructures
 
 # it may be simpler to represent these as an adjacency matrix directly, but i plan
 # on using some big ass graphs, so we save some memory by doing it this way
@@ -66,6 +67,19 @@ class DirectedGraph(object):
         if edgeValue != None:
             self.edges.setdefault((src,dst), set()).add(edgeValue)
 
+    def union(self, other):
+      '''
+      in place union
+      '''
+
+      for n in other.nodes:
+        self.add_node(n)
+        for m in other.nodes[n].outgoing:
+          self.connect(n, m)
+          if (n,m) in other.edges:
+            for ev in other.edges[(n,m)]:
+              self.connect(n, m, edgeValue=ev)
+
     def set_weight(self, w, src, dst, edgeValue=None):
       self.connect(src,dst,edgeValue)
       self.edge_weights[(src,dst,edgeValue)] = w
@@ -114,10 +128,7 @@ class DirectedGraph(object):
 
     def connectedQ(self, src, dst):
         src = self.nodes[src]
-        for i in src.outgoing:
-            if i == dst:
-                return True
-        return False
+        return dst in src.outgoing
 
     def walk(self, src, direction='outgoing', depthfirst=False):
         src = self.nodes.setdefault(src, DirectedGraph.Node(src))

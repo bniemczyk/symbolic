@@ -18,6 +18,12 @@ class TestDirectedGraph(unittest.TestCase):
   def test_edges(self):
     self.assertEqual(len(self.g.nodes[self.x].outgoing), 2)
 
+  def test_union(self):
+    og = symath.graph.directed.DirectedGraph()
+    og.connect(self.x, symath.symbols('ognode'))
+    og.union(self.g)
+    self.assertTrue(og.connectedQ(self.x, self.y))
+
   def test_pathq(self):
     self.assertTrue(pathQ(self.g, self.x, self.z))
 
