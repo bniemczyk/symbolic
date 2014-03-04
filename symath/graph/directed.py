@@ -238,8 +238,9 @@ class DirectedGraph(object):
       visualize using xdot
       '''
       import os
+
+      fname = self._write_dot_file(layout=layout)
       try:
-        fname = self._write_dot_file(layout=layout)
         os.system('xdot --filter=%s %s' % (layout, fname))
       finally:
         os.unlink(fname)
