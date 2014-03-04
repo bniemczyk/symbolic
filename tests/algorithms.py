@@ -3,6 +3,7 @@
 import unittest
 import symath
 import symath.util as util
+import symath.datastructures as datastructures
 
 class TestAlgorithms(unittest.TestCase):
 
@@ -53,6 +54,20 @@ class TestAlgorithms(unittest.TestCase):
     for k in rv:
       m[len(k[0][0]), len(k[0][1])] = rv[k][0]
     print m
+
+  def test_onetimequeue(self):
+    otq = datastructures.onetimequeue()
+    [otq.push(i) for i in [1,1,2,3,4,3,1]]
+    self.assertEqual(len(otq), 4)
+    newl = [otq.pop() for i in range(len(otq))]
+    self.assertEqual(len(newl), 4)
+    self.assertEqual(len(otq), 0)
+    otq.push(3)
+    self.assertEqual(len(otq), 0)
+    self.assertEqual(newl[0], 1)
+    self.assertEqual(newl[1], 2)
+    self.assertEqual(newl[2], 3)
+    self.assertEqual(newl[3], 4)
 
 if __name__ == '__main__':
   unittest.main()
