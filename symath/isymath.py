@@ -9,7 +9,7 @@ from IPython.display import Latex
 _greek = symbols('theta gamma Theta Gamma alpha beta Alpha Beta Delta delta pi Pi phi Phi')
 
 def _idisplay(exp):
-    x,y,z = wilds('x y z')
+    x,y,z,n = wilds('x y z n')
     ws = WildResults()
     
     if exp.match(x ** y, ws):
@@ -47,6 +47,9 @@ def _idisplay(exp):
     
     elif exp.match(stdops.Equal(x,y), ws):
         return r'%s = %s' % (_idisplay(ws.x), _idisplay(ws.y))
+
+    elif exp.match(functions.Sum(n, x), ws):
+      return r'\Sum_{%s}{%s}' % (_idisplay(ws.n), _idisplay(ws.x))
     
     else:
         return str(exp)
