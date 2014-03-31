@@ -49,5 +49,12 @@ class TestCalculus(unittest.TestCase):
     valid = (symath.functions.Sum(n, y * (x(n) ** (y - 1)))).simplify()
     self.assertEqual(valid, expression_dx)
 
+  def test_log(self):
+    x,y = symath.symbols('x y')
+    expression = symath.functions.Log(x * y)
+    dx = diff(expression, x).simplify()
+
+    self.assertEqual(dx, (y / (x * y)).simplify())
+
 if __name__ == '__main__':
   unittest.main()

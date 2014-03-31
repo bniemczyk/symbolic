@@ -3,7 +3,7 @@ from functions import *
 from stdops import *
 from memoize import Memoize
 
-_known_functions = (Add, Sub, Mul, Div, Pow, Sin, Cos, Tan, Exp, Sum)
+_known_functions = (Log, Add, Sub, Mul, Div, Pow, Sin, Cos, Tan, Exp, Sum)
 
 class DifferentiationError(Exception):
   pass
@@ -45,6 +45,9 @@ def _diff_known_function(expression, variable):
       return Sum(vals.g, diff(vals.h, variable(vals.g)))
     else:
       return Sum(vals.g, diff(vals.h, variable))
+
+  elif expression.match(Log(variable), vals):
+    return 1.0 / variable
 
   raise DifferentiationError("d/d%s  %s" % (variable,expression))
 
