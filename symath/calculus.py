@@ -22,7 +22,7 @@ def _diff_known_function(expression, variable):
   elif expression.match(g - h, vals):
     return diff(vals.g, variable) - diff(vals.h, variable)
 
-  elif expression.match(variable ** g, vals) and vals.g.is_integer:
+  elif expression.match(variable ** g, vals):
     return vals.g * (variable ** (vals.g - 1))
 
   elif expression.match(g * h, vals):
