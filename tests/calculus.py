@@ -41,5 +41,13 @@ class TestCalculus(unittest.TestCase):
     print diff(1 / x, x)
     self.assertEqual(diff(1 / x, x).simplify(), (-1 / x**2).simplify())
 
+  def test_summation(self):
+    x,n,y = symath.symbols('x n y')
+    expression = symath.functions.Sum(n, x(n) ** y)
+    expression_dx = diff(expression, x).simplify()
+
+    valid = (symath.functions.Sum(n, y * (x(n) ** (y - 1)))).simplify()
+    self.assertEqual(valid, expression_dx)
+
 if __name__ == '__main__':
   unittest.main()
