@@ -49,7 +49,7 @@ def _idisplay(exp):
         return r'%s = %s' % (_idisplay(ws.x), _idisplay(ws.y))
 
     elif exp.match(functions.Sum(n, x), ws):
-      return r'\Sum_{%s}{%s}' % (_idisplay(ws.n), _idisplay(ws.x))
+      return r'\sum_{%s}{%s}' % (_idisplay(ws.n), _idisplay(ws.x))
     
     else:
         return str(exp)
