@@ -23,7 +23,14 @@ class DirectedGraph(object):
     def set_color(self, node, color):
       self.add_node(node)
       self.nodes[node].color = color
-
+        
+    def set_edge_color(self, f, t, color):
+        self.edge_colors[(f, t)] = color
+        
+    def get_edge_color(self, f, t):
+        k = (f, t)
+        return 'black' if k not in self.edge_colors else self.edge_colors[k]
+    
     def copy(self):
         return copy.deepcopy(self)
 
@@ -32,6 +39,7 @@ class DirectedGraph(object):
         self.edges = {}
         self.edge_weights = {}
         self.show_weights = show_weights
+        self.edge_colors = {}
 
     @staticmethod
     def from_adjacency(nodes, adjM, **kargs):
@@ -229,14 +237,15 @@ class DirectedGraph(object):
 
         for n in self.nodes:
             for o in self.nodes[n].outgoing:
+                ecolor = self.get_edge_color(n, o)
                 if (n, o) in self.edges:
                     for e in self.edges[(n,o)]:
-                        dotg.add_edge(pydot.Edge(dotnodes[n], dotnodes[o],label=e))
+                        dotg.add_edge(pydot.Edge(dotnodes[n], dotnodes[o],label=e, color=ecolor))
                 else:
                   if self.show_weights:
-                    dotg.add_edge(pydot.Edge(dotnodes[n], dotnodes[o], label=self.get_weight(n, o)))
+                    dotg.add_edge(pydot.Edge(dotnodes[n], dotnodes[o], label=self.get_weight(n, o), color=ecolor))
                   else:
-                    dotg.add_edge(pydot.Edge(dotnodes[n], dotnodes[o]))
+                    dotg.add_edge(pydot.Edge(dotnodes[n], dotnodes[o], color=ecolor))
 
         f = tempfile.NamedTemporaryFile(mode='w+b',delete=False)
 
