@@ -12,7 +12,7 @@ scipy
 
 setup( \
   name='symath', \
-  version='git', \
+  version='0.1.24', \
   description='symbolic mathematics for python', \
   author='Brandon Niemczyk', \
   author_email='brandon.niemczyk@gmail.com', \
