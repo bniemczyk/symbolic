@@ -20,7 +20,7 @@ def collect(exp, fn):
       rv.add(exp)
     return exp
 
-  exp.walk(collect)
+  exp.walk(_collect)
   return rv
 
 class _Symbolic(tuple):
