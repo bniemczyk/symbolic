@@ -23,6 +23,26 @@ def collect(exp, fn):
   exp.walk(_collect)
   return rv
 
+def _replace_one(expr, match, repl):
+  vals = WildResults()
+  if expr.match(match, vals):
+    expr = repl.substitute({wilds(w): vals[w] for w in vals})
+
+  if len(expr) > 1:
+    return expr[0](*[_replace_one(x, match, repl) for x in expr.args])
+  else:
+    return expr
+
+def replace(expr, d, repeat=True):
+  while True:
+    old_expr = expr
+    for k in d:
+      expr = _replace_one(expr, k, d[k])
+
+    if old_expr == expr or not repeat:
+      return expr
+
+
 class _Symbolic(tuple):
 
   def match(self, other, valuestore=None):

@@ -24,5 +24,12 @@ class TestCoreClasses(unittest.TestCase):
     m = {'should be removed': True}
     self.assertTrue(self.head(self.x).match(symath.wild()(self.x), m))
 
+  def test_replace_all(self):
+    a,b,c = symath.wilds('a b c')
+    x,y,z = symath.wilds('x y z')
+
+    term = (x & (y | z))
+    self.assertEqual(y | z, symath.replace(term, { a & b: b }))
+
 if __name__ == '__main__':
   unittest.main()
